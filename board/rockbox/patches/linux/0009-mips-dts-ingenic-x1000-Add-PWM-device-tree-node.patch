@@ -1,0 +1,38 @@
+From 2e6eccef40875593ecd2f6c107923e1e136fa6c1 Mon Sep 17 00:00:00 2001
+From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+Date: Sat, 12 Feb 2022 13:29:44 +0000
+Subject: [PATCH 09/10] mips: dts: ingenic: x1000: Add PWM device tree node
+
+Copied from the jz4740 devicetree and trimmed to 5 timers, which
+is what the hardware supports.
+---
+ arch/mips/boot/dts/ingenic/x1000.dtsi | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/arch/mips/boot/dts/ingenic/x1000.dtsi b/arch/mips/boot/dts/ingenic/x1000.dtsi
+index c69df8eb158e..5d3002e12560 100644
+--- a/arch/mips/boot/dts/ingenic/x1000.dtsi
++++ b/arch/mips/boot/dts/ingenic/x1000.dtsi
+@@ -128,6 +128,19 @@ wdt: watchdog@0 {
+ 			clocks = <&tcu TCU_CLK_WDT>;
+ 			clock-names = "wdt";
+ 		};
++
++		pwm: pwm@40 {
++			compatible = "ingenic,x1000-pwm";
++			reg = <0x40 0x80>;
++
++			#pwm-cells = <3>;
++
++			clocks = <&tcu TCU_CLK_TIMER0>, <&tcu TCU_CLK_TIMER1>,
++				 <&tcu TCU_CLK_TIMER2>, <&tcu TCU_CLK_TIMER3>,
++				 <&tcu TCU_CLK_TIMER4>;
++			clock-names = "timer0", "timer1", "timer2",
++				      "timer3", "timer4";
++		};
+ 	};
+ 
+ 	rtc: rtc@10003000 {
+-- 
+2.34.1
+

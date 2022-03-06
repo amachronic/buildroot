@@ -1,0 +1,31 @@
+From 2515672fb93462fb98f46913a571b6977f2f1330 Mon Sep 17 00:00:00 2001
+From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+Date: Sat, 12 Feb 2022 13:21:53 +0000
+Subject: [PATCH 05/10] mips: dts: ingenic: x1000: Add TCU clock to tcu device
+ node
+
+This should've been present all along, but was omitted due to a
+mistake in the driver.
+---
+ arch/mips/boot/dts/ingenic/x1000.dtsi | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/mips/boot/dts/ingenic/x1000.dtsi b/arch/mips/boot/dts/ingenic/x1000.dtsi
+index 8bd27edef216..c69df8eb158e 100644
+--- a/arch/mips/boot/dts/ingenic/x1000.dtsi
++++ b/arch/mips/boot/dts/ingenic/x1000.dtsi
+@@ -111,8 +111,9 @@ tcu: timer@10002000 {
+ 
+ 		clocks = <&cgu X1000_CLK_RTCLK>,
+ 			 <&cgu X1000_CLK_EXCLK>,
+-			 <&cgu X1000_CLK_PCLK>;
+-		clock-names = "rtc", "ext", "pclk";
++			 <&cgu X1000_CLK_PCLK>,
++			 <&cgu X1000_CLK_TCU>;
++		clock-names = "rtc", "ext", "pclk", "tcu";
+ 
+ 		interrupt-controller;
+ 		#interrupt-cells = <1>;
+-- 
+2.34.1
+

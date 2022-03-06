@@ -1,0 +1,52 @@
+From 81812bb6a17643c8e5bd62d9241767283b4c87f6 Mon Sep 17 00:00:00 2001
+From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+Date: Mon, 7 Feb 2022 16:14:49 +0000
+Subject: [PATCH 01/10] clk: ingenic: Allow specifying common clock flags
+
+Provide a flags field for clocks under the ingenic-cgu driver,
+which can be used to set generic common clock framework flags
+on the created clocks. For example, the CLK_IS_CRITICAL flag
+is needed for some clocks (such as CPU or memory) to stop them
+being automatically disabled.
+---
+ drivers/clk/ingenic/cgu.c | 2 +-
+ drivers/clk/ingenic/cgu.h | 3 +++
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/clk/ingenic/cgu.c b/drivers/clk/ingenic/cgu.c
+index af31633a8862..861c50d6cb24 100644
+--- a/drivers/clk/ingenic/cgu.c
++++ b/drivers/clk/ingenic/cgu.c
+@@ -660,7 +660,7 @@ static int ingenic_register_clock(struct ingenic_cgu *cgu, unsigned idx)
+ 	ingenic_clk->idx = idx;
+ 
+ 	clk_init.name = clk_info->name;
+-	clk_init.flags = 0;
++	clk_init.flags = clk_info->flags;
+ 	clk_init.parent_names = parent_names;
+ 
+ 	caps = clk_info->type;
+diff --git a/drivers/clk/ingenic/cgu.h b/drivers/clk/ingenic/cgu.h
+index bfc2b9c38a41..147b7df0d657 100644
+--- a/drivers/clk/ingenic/cgu.h
++++ b/drivers/clk/ingenic/cgu.h
+@@ -136,6 +136,7 @@ struct ingenic_cgu_custom_info {
+  * struct ingenic_cgu_clk_info - information about a clock
+  * @name: name of the clock
+  * @type: a bitmask formed from CGU_CLK_* values
++ * @flags: common clock flags to set on this clock
+  * @parents: an array of the indices of potential parents of this clock
+  *           within the clock_info array of the CGU, or -1 in entries
+  *           which correspond to no valid parent
+@@ -161,6 +162,8 @@ struct ingenic_cgu_clk_info {
+ 		CGU_CLK_CUSTOM		= BIT(7),
+ 	} type;
+ 
++	unsigned long flags;
++
+ 	int parents[4];
+ 
+ 	union {
+-- 
+2.34.1
+

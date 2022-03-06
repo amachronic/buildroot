@@ -1,0 +1,360 @@
+From f8b99e47dabd63b462f1fbc4ca39c77ebd14b78a Mon Sep 17 00:00:00 2001
+From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+Date: Fri, 25 Feb 2022 00:49:08 +0000
+Subject: [PATCH 1/3] Shanling Q1 defconfig & dts
+
+---
+ arch/mips/boot/dts/ingenic/Makefile       |   1 +
+ arch/mips/boot/dts/ingenic/shanlingq1.dts | 187 ++++++++++++++++++++++
+ arch/mips/configs/shanlingq1_defconfig    | 118 ++++++++++++++
+ arch/mips/ingenic/Kconfig                 |   4 +
+ 4 files changed, 310 insertions(+)
+ create mode 100644 arch/mips/boot/dts/ingenic/shanlingq1.dts
+ create mode 100644 arch/mips/configs/shanlingq1_defconfig
+
+diff --git a/arch/mips/boot/dts/ingenic/Makefile b/arch/mips/boot/dts/ingenic/Makefile
+index 54aa0c4e6091..89fd31500257 100644
+--- a/arch/mips/boot/dts/ingenic/Makefile
++++ b/arch/mips/boot/dts/ingenic/Makefile
+@@ -5,5 +5,6 @@ dtb-$(CONFIG_JZ4770_GCW0)	+= gcw0.dtb
+ dtb-$(CONFIG_JZ4780_CI20)	+= ci20.dtb
+ dtb-$(CONFIG_X1000_CU1000_NEO)	+= cu1000-neo.dtb
+ dtb-$(CONFIG_X1830_CU1830_NEO)	+= cu1830-neo.dtb
++dtb-$(CONFIG_X1000_SHANLINGQ1)	+= shanlingq1.dtb
+ 
+ obj-$(CONFIG_BUILTIN_DTB)	+= $(addsuffix .o, $(dtb-y))
+diff --git a/arch/mips/boot/dts/ingenic/shanlingq1.dts b/arch/mips/boot/dts/ingenic/shanlingq1.dts
+new file mode 100644
+index 000000000000..6d26c681dbc7
+--- /dev/null
++++ b/arch/mips/boot/dts/ingenic/shanlingq1.dts
+@@ -0,0 +1,187 @@
++// SPDX-License-Identifier: GPL-2.0
++/dts-v1/;
++
++#include "x1000.dtsi"
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/input/input.h>
++#include <dt-bindings/clock/ingenic,sysost.h>
++#include <dt-bindings/interrupt-controller/irq.h>
++
++/ {
++    compatible = "shanlingq,q1", "ingenic,x1000e";
++    model = "Shanling Q1";
++
++    memory {
++        device_type = "memory";
++        reg = <0x0 0x04000000>;
++    };
++
++    backlight {
++        compatible = "pwm-backlight";
++        pwms = <&pwm 0 10000 0>;
++
++        pinctrl-names = "default";
++        pinctrl-0 = <&pins_pwm0>;
++    };
++
++    gpio-keys {
++        compatible = "gpio-keys";
++
++        button@0 {
++            label = "power";
++            linux,code = <KEY_POWER>;
++            gpios = <&gpb 31 GPIO_ACTIVE_LOW>;
++        };
++
++        button@1 {
++            label = "play";
++            linux,code = <KEY_PLAY>;
++            gpios = <&gpb 28 GPIO_ACTIVE_LOW>;
++        };
++
++        button@2 {
++            label = "previous";
++            linux,code = <KEY_PREVIOUS>;
++            gpios = <&gpb 21 GPIO_ACTIVE_LOW>;
++        };
++
++        button@3 {
++            label = "next";
++            linux,code = <KEY_NEXT>;
++            gpios = <&gpb 22 GPIO_ACTIVE_LOW>;
++        };
++    };
++
++    rotary-encoder {
++        compatible = "rotary-encoder";
++        gpios = <&gpd 2 GPIO_ACTIVE_HIGH>,
++                <&gpd 3 GPIO_ACTIVE_HIGH>;
++        linux,axis = <REL_WHEEL>;
++        rotary-encoder,relative-axis;
++    };
++};
++
++&exclk {
++    clock-frequency = <24000000>;
++};
++
++&cgu {
++    /*
++     * Use the 32.768 kHz oscillator as the parent of the RTC for a higher
++     * precision.
++     */
++    assigned-clocks = <&cgu X1000_CLK_RTC>;
++    assigned-clock-parents = <&cgu X1000_CLK_RTCLK>;
++};
++
++&tcu {
++    /*
++     * Set channel mask to allow PWM0 to be used.
++     */
++    ingenic,pwm-channels-mask = <0x01>;
++
++    /*
++     * Use PCLK as the parent for the PWM backlight timer to
++     * maximize the number of brightness steps.
++     *
++     * Also have to set timer2 to avoid a driver probe error
++     * Set WDT since it seems needed
++     * Set timer1 just in case it is getting used but idk
++     */
++    assigned-clocks = <&tcu TCU_CLK_TIMER0>,
++                      <&tcu TCU_CLK_TIMER1>,
++                      <&tcu TCU_CLK_TIMER2>,
++                      <&tcu TCU_CLK_WDT>;
++    assigned-clock-parents = <&cgu X1000_CLK_PCLK>,
++                             <&cgu X1000_CLK_PCLK>,
++                             <&cgu X1000_CLK_PCLK>,
++                             <&cgu X1000_CLK_RTCLK>;
++    assigned-clock-rates = <0>,
++                           <1500000>,
++                           <1500000>,
++                           <24000000>;
++};
++
++&ost {
++    /* 1500 kHz for the system timer and clocksource */
++    assigned-clocks = <&ost OST_CLK_PERCPU_TIMER>, <&ost OST_CLK_GLOBAL_TIMER>;
++    assigned-clock-rates = <1500000>, <1500000>;
++};
++
++&otg_phy {
++    status = "okay";
++};
++
++&otg {
++    status = "okay";
++};
++
++&msc0 {
++    status = "okay";
++
++    bus-width = <4>;
++    max-frequency = <50000000>;
++
++    pinctrl-names = "default";
++    pinctrl-0 = <&pins_msc0>;
++
++    cd-gpios = <&gpb 9 GPIO_ACTIVE_LOW>;
++};
++
++&i2c0 {
++    status = "okay";
++
++    clock-frequency = <400000>;
++
++    pinctrl-names = "default";
++    pinctrl-0 = <&pins_i2c0>;
++};
++
++&i2c1 {
++    status = "okay";
++
++    clock-frequency = <400000>;
++
++    pinctrl-names = "default";
++    pinctrl-0 = <&pins_i2c1>;
++};
++
++&i2c2 {
++    status = "okay";
++
++    clock-frequency = <400000>;
++
++    pinctrl-names = "default";
++    pinctrl-0 = <&pins_i2c2>;
++};
++
++&pinctrl {
++    pins_msc0: msc0 {
++        function = "mmc0";
++        groups = "mmc0-1bit", "mmc0-4bit";
++        bias-disable;
++    };
++
++    pins_pwm0: pwm0 {
++        function = "pwm0";
++        groups = "pwm0";
++    };
++
++    pins_i2c0: i2c0 {
++        function = "i2c0";
++        groups = "i2c0-data";
++        bias-pull-up;
++    };
++
++    pins_i2c1: i2c1 {
++        function = "i2c1";
++        groups = "i2c1-data-c";
++        bias-pull-up;
++    };
++
++    pins_i2c2: i2c2 {
++        function = "i2c2";
++        groups = "i2c2-data";
++        bias-pull-up;
++    };
++};
+diff --git a/arch/mips/configs/shanlingq1_defconfig b/arch/mips/configs/shanlingq1_defconfig
+new file mode 100644
+index 000000000000..eb201a90372e
+--- /dev/null
++++ b/arch/mips/configs/shanlingq1_defconfig
+@@ -0,0 +1,118 @@
++# general stuff
++CONFIG_CC_OPTIMIZE_FOR_SIZE=y
++CONFIG_EMBEDDED=y
++
++# basic features
++CONFIG_SYSVIPC=y
++CONFIG_PREEMPT=y
++CONFIG_NO_HZ_IDLE=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_SUSPEND=n
++
++# ingenic machine
++CONFIG_MACH_INGENIC_SOC=y
++CONFIG_X1000_SHANLINGQ1=y
++
++# sysost clock source
++CONFIG_INGENIC_SYSOST=y
++
++# i2c bus
++CONFIG_I2C=y
++CONFIG_I2C_JZ4780=y
++
++# watchdog timer
++CONFIG_WATCHDOG=y
++CONFIG_JZ4740_WDT=y
++
++# usb gadget
++CONFIG_USB_GADGET=y
++CONFIG_USB_DWC2=y
++CONFIG_USB_DWC2_PERIPHERAL=y
++CONFIG_PHY_INGENIC_USB=y
++
++# usb gadget functions
++CONFIG_USB_G_SERIAL=y
++CONFIG_USB_U_SERIAL=y
++CONFIG_U_SERIAL_CONSOLE=y
++
++# mmc bus
++CONFIG_MMC=y
++CONFIG_MMC_JZ4740=y
++
++# rtc
++CONFIG_RTC_CLASS=y
++CONFIG_RTC_DRV_JZ4740=y
++
++# dma engine
++CONFIG_DMADEVICES=y
++CONFIG_DMA_JZ4780=y
++
++# backlight
++CONFIG_BACKLIGHT_CLASS_DEVICE=y
++CONFIG_BACKLIGHT_PWM=y
++
++# pwm
++CONFIG_PWM=y
++CONFIG_PWM_JZ4740=y
++
++# buttons
++CONFIG_INPUT=y
++CONFIG_INPUT_EVDEV=y
++CONFIG_INPUT_KEYBOARD=y
++CONFIG_INPUT_MISC=y
++CONFIG_KEYBOARD_GPIO=y
++CONFIG_INPUT_GPIO_ROTARY_ENCODER=y
++
++# voltage regulator
++CONFIG_REGULATOR=y
++CONFIG_REGULATOR_FIXED_VOLTAGE=y
++
++# filesystems etc
++CONFIG_EXT4_FS=y
++CONFIG_EXT4_FS_POSIX_ACL=y
++CONFIG_TMPFS=y
++CONFIG_TMPFS_POSIX_ACL=y
++CONFIG_VFAT_FS=y
++CONFIG_EXFAT_FS=y
++CONFIG_NTFS3_FS=y
++CONFIG_MISC_FILESYSTEMS=y
++CONFIG_SQUASHFS=y
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
++CONFIG_ISO9660_FS=y
++CONFIG_UDF_FS=y
++CONFIG_DEBUG_FS=y
++
++# codepages
++CONFIG_NLS_CODEPAGE_437=y
++CONFIG_NLS_CODEPAGE_737=y
++CONFIG_NLS_CODEPAGE_775=y
++CONFIG_NLS_CODEPAGE_850=y
++CONFIG_NLS_CODEPAGE_852=y
++CONFIG_NLS_CODEPAGE_855=y
++CONFIG_NLS_CODEPAGE_857=y
++CONFIG_NLS_CODEPAGE_860=y
++CONFIG_NLS_CODEPAGE_861=y
++CONFIG_NLS_CODEPAGE_862=y
++CONFIG_NLS_CODEPAGE_863=y
++CONFIG_NLS_CODEPAGE_864=y
++CONFIG_NLS_CODEPAGE_865=y
++CONFIG_NLS_CODEPAGE_866=y
++CONFIG_NLS_CODEPAGE_869=y
++CONFIG_NLS_ASCII=y
++CONFIG_NLS_CODEPAGE_1250=y
++CONFIG_NLS_CODEPAGE_1251=y
++CONFIG_NLS_ISO8859_1=y
++CONFIG_NLS_ISO8859_2=y
++CONFIG_NLS_ISO8859_3=y
++CONFIG_NLS_ISO8859_4=y
++CONFIG_NLS_ISO8859_5=y
++CONFIG_NLS_ISO8859_6=y
++CONFIG_NLS_ISO8859_7=y
++CONFIG_NLS_ISO8859_8=y
++CONFIG_NLS_ISO8859_9=y
++CONFIG_NLS_ISO8859_13=y
++CONFIG_NLS_ISO8859_14=y
++CONFIG_NLS_ISO8859_15=y
++CONFIG_NLS_UTF8=y
+diff --git a/arch/mips/ingenic/Kconfig b/arch/mips/ingenic/Kconfig
+index f595b339a4b8..a9d72047fabe 100644
+--- a/arch/mips/ingenic/Kconfig
++++ b/arch/mips/ingenic/Kconfig
+@@ -43,6 +43,10 @@ config X1830_CU1830_NEO
+ 	bool "YSH & ATIL CU1830 Module with Neo backplane"
+ 	select MACH_X1830
+ 
++config X1000_SHANLINGQ1
++    bool "Shanling Q1"
++    select MACH_X1000
++
+ endchoice
+ 
+ config MACH_JZ4725B
+-- 
+2.34.1
+

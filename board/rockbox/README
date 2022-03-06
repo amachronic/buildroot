@@ -1,0 +1,72 @@
+General status
+--------------
+
+Don't expect much. Currently there are device trees and defconfigs available
+for the Shanling Q1 and the FiiO M3K. These will get you a shell over USB
+but little else.
+
+Stuff that works:
+
+* MMC/SD card
+* USB
+* Buttons and volume wheel
+* RTC
+
+Stuff that does not work:
+
+* Audio
+* LCD
+* Touchscreen/touchpad
+
+
+Quick start guide
+-----------------
+
+Select the appropriate defconfig:
+
+    $ make shanlingq1_defconfig
+    $ make fiiom3k_defconfig
+
+The default config will give you a bootable system, but you may want to enable
+ccache to speed up rebuilds. Hardware support is currently very limited so you
+will not need to enable any extra packages.
+
+When ready, start the compile:
+
+    $ make
+
+
+Preparing the SD card
+---------------------
+
+You'll need to use an MBR partition table and create two partitions:
+
+    /dev/mmcblk0p1: FAT32, boot partition
+    /dev/mmcblk0p2: ext4, root filesystem partition
+
+Copy your kernel uImage to the root of the boot partition, and extract the
+root filesystem image to the other partition.
+
+
+Booting the kernel
+------------------
+
+To boot your kernel you'll need a recent version of the Rockbox bootloader.
+Old versions released in 2021 do not have support for booting Linux and will
+not work; you may need to compile a development bootloader.
+
+You'll also need to provide kernel arguments in the file "linux_cmdline.txt",
+next to the kernel image. Use this to get started:
+
+    console=ttyGS0 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait rw
+
+With this in place, enter the bootloader recovery menu and select Linux from
+the boot menu. If the kernel booted successfully, you will be able to connect
+to your player over USB and get a shell through the /dev/ttyACMx serial port.
+For example using minicom on the host computer:
+
+    minicom -D /dev/ttyACM0
+
+You'll need suitable permissions to access /dev/ttyACM0, eg. being part of the
+"dialout" group, or simply run minicom as root. To login, use "root" with no
+password.

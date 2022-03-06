@@ -1,0 +1,34 @@
+From 2f3aa2402903452718b88fa135171f438b3676d2 Mon Sep 17 00:00:00 2001
+From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+Date: Sat, 12 Feb 2022 13:29:33 +0000
+Subject: [PATCH 10/10] pwm: jz4740: Add support for X1000 SoC
+
+The X1000 has the same TCU / PWM hardware as other Ingenic SoCs,
+but it has only 5 channels.
+---
+ drivers/pwm/pwm-jz4740.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/pwm/pwm-jz4740.c b/drivers/pwm/pwm-jz4740.c
+index 23dc1fb770e2..a5fdf97c0d2e 100644
+--- a/drivers/pwm/pwm-jz4740.c
++++ b/drivers/pwm/pwm-jz4740.c
+@@ -256,10 +256,15 @@ static const struct soc_info __maybe_unused jz4725b_soc_info = {
+ 	.num_pwms = 6,
+ };
+ 
++static const struct soc_info __maybe_unused x1000_soc_info = {
++	.num_pwms = 5,
++};
++
+ #ifdef CONFIG_OF
+ static const struct of_device_id jz4740_pwm_dt_ids[] = {
+ 	{ .compatible = "ingenic,jz4740-pwm", .data = &jz4740_soc_info },
+ 	{ .compatible = "ingenic,jz4725b-pwm", .data = &jz4725b_soc_info },
++	{ .compatible = "ingenic,x1000-pwm", .data = &x1000_soc_info },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, jz4740_pwm_dt_ids);
+-- 
+2.34.1
+

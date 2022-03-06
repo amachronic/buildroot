@@ -1,0 +1,26 @@
+From b8be6343eef70df165cb8cdfe2be003f7a410ebd Mon Sep 17 00:00:00 2001
+From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+Date: Mon, 7 Feb 2022 16:40:36 +0000
+Subject: [PATCH 08/10] dt-bindings: timer: Add PWM compatible for X1000 SoC
+
+The PWM hardware on the X1000 SoC is almost identical to other
+Ingenic SoCs, so it can be used with only minor driver changes.
+---
+ Documentation/devicetree/bindings/timer/ingenic,tcu.yaml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Documentation/devicetree/bindings/timer/ingenic,tcu.yaml b/Documentation/devicetree/bindings/timer/ingenic,tcu.yaml
+index 7fb37eae9da7..d541cf2067bc 100644
+--- a/Documentation/devicetree/bindings/timer/ingenic,tcu.yaml
++++ b/Documentation/devicetree/bindings/timer/ingenic,tcu.yaml
+@@ -152,6 +152,7 @@ patternProperties:
+           - enum:
+               - ingenic,jz4740-pwm
+               - ingenic,jz4725b-pwm
++              - ingenic,x1000-pwm
+           - items:
+               - enum:
+                   - ingenic,jz4760-pwm
+-- 
+2.34.1
+
