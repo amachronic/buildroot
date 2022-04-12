@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-WIREPLUMBER_VERSION = 0.4.2
+WIREPLUMBER_VERSION = 0.4.8
 WIREPLUMBER_SOURCE = wireplumber-$(WIREPLUMBER_VERSION).tar.bz2
 WIREPLUMBER_SITE = https://gitlab.freedesktop.org/pipewire/wireplumber/-/archive/$(WIREPLUMBER_VERSION)
 WIREPLUMBER_LICENSE = MIT
@@ -17,7 +17,7 @@ WIREPLUMBER_CONF_OPTS = \
 	-Dsystem-lua-version=
 
 ifeq ($(BR2_PACKAGE_GOBJECT_INTROSPECTION),y)
-WIREPLUMBER_DEPENDENCIES += gobject-introspection
+WIREPLUMBER_DEPENDENCIES += host-doxygen host-python-lxml gobject-introspection
 WIREPLUMBER_CONF_OPTS += -Dintrospection=enabled
 else
 WIREPLUMBER_CONF_OPTS += -Dintrospection=disabled

@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-GRPC_VERSION = 1.43.0
+GRPC_VERSION = 1.44.0
 GRPC_SITE = $(call github,grpc,grpc,v$(GRPC_VERSION))
 GRPC_LICENSE = Apache-2.0, BSD-3-Clause (third_party code), MPL-2.0 (etc/roots.pem)
 GRPC_LICENSE_FILES = LICENSE
@@ -21,6 +21,7 @@ HOST_GRPC_DEPENDENCIES = host-protobuf
 # which doesn't do this.  These CARES settings trick the gRPC cmake code into
 # not looking for c-ares at all and yet still linking with the library.
 GRPC_CONF_OPTS = \
+	-DCMAKE_EXE_LINKER_FLAGS="$(GRPC_EXE_LINKER_FLAGS)" \
 	-DgRPC_ABSL_PROVIDER=package \
 	-D_gRPC_CARES_LIBRARIES=cares \
 	-DgRPC_CARES_PROVIDER=none \
@@ -36,10 +37,15 @@ GRPC_CONF_OPTS = \
 	-DgRPC_BUILD_GRPC_PYTHON_PLUGIN=OFF \
 	-DgRPC_BUILD_GRPC_RUBY_PLUGIN=OFF
 
+ifeq ($(BR2_PACKAGE_LIBEXECINFO),y)
+GRPC_DEPENDENCIES += libexecinfo
+GRPC_EXE_LINKER_FLAGS += -lexecinfo
+endif
+
 # grpc can use __atomic builtins, so we need to link with
 # libatomic when available
 ifeq ($(BR2_TOOLCHAIN_HAS_LIBATOMIC),y)
-GRPC_CONF_OPTS += -DCMAKE_EXE_LINKER_FLAGS=-latomic
+GRPC_EXE_LINKER_FLAGS += -latomic
 endif
 
 GRPC_CFLAGS = $(TARGET_CFLAGS)
