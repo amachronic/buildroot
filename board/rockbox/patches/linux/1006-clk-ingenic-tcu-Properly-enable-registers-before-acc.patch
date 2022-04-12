@@ -1,0 +1,62 @@
+From 3385376f53f8d4aff9c1d5d376fb247d4bafdb36 Mon Sep 17 00:00:00 2001
+From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+Date: Wed, 13 Apr 2022 13:09:26 +0100
+Subject: [PATCH 06/19] clk: ingenic-tcu: Properly enable registers before
+ accessing timers
+
+Access to registers is guarded by ingenic_tcu_{enable,disable}_regs()
+so the stop bit can be cleared before accessing a timer channel, but
+those functions did not clear the stop bit on SoCs with a global TCU
+clock gate.
+
+Testing on the X1000 has revealed that the stop bits must be cleared
+_and_ the global TCU clock must be ungated to access timer registers.
+Programming manuals for the X1000, JZ4740, and JZ4725B specify this
+behavior. If the stop bit isn't cleared, then writes to registers do
+not take effect, which can leave clocks with no defined parent when
+registered and leave clock tree state out of sync with the hardware,
+triggering bugs in downstream drivers relying on TCU clocks.
+
+Fixing this is easy: have ingenic_tcu_{enable,disable}_regs() always
+clear the stop bit, regardless of the presence of a global TCU gate.
+---
+ drivers/clk/ingenic/tcu.c | 15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/clk/ingenic/tcu.c b/drivers/clk/ingenic/tcu.c
+index 201bf6e6b6e0..d5544cbc5c48 100644
+--- a/drivers/clk/ingenic/tcu.c
++++ b/drivers/clk/ingenic/tcu.c
+@@ -101,15 +101,11 @@ static bool ingenic_tcu_enable_regs(struct clk_hw *hw)
+ 	bool enabled = false;
+ 
+ 	/*
+-	 * If the SoC has no global TCU clock, we must ungate the channel's
+-	 * clock to be able to access its registers.
+-	 * If we have a TCU clock, it will be enabled automatically as it has
+-	 * been attached to the regmap.
++	 * According to the programming manual, a timer channel's registers can
++	 * only be accessed when the channel's stop bit is clear.
+ 	 */
+-	if (!tcu->clk) {
+-		enabled = !!ingenic_tcu_is_enabled(hw);
+-		regmap_write(tcu->map, TCU_REG_TSCR, BIT(info->gate_bit));
+-	}
++	enabled = !!ingenic_tcu_is_enabled(hw);
++	regmap_write(tcu->map, TCU_REG_TSCR, BIT(info->gate_bit));
+ 
+ 	return enabled;
+ }
+@@ -120,8 +116,7 @@ static void ingenic_tcu_disable_regs(struct clk_hw *hw)
+ 	const struct ingenic_tcu_clk_info *info = tcu_clk->info;
+ 	struct ingenic_tcu *tcu = tcu_clk->tcu;
+ 
+-	if (!tcu->clk)
+-		regmap_write(tcu->map, TCU_REG_TSSR, BIT(info->gate_bit));
++	regmap_write(tcu->map, TCU_REG_TSSR, BIT(info->gate_bit));
+ }
+ 
+ static u8 ingenic_tcu_get_parent(struct clk_hw *hw)
+-- 
+2.35.1
+

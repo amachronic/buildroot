@@ -1,7 +1,7 @@
-From 956a9aebe971cb6a21147de446d9728f7332e8aa Mon Sep 17 00:00:00 2001
+From 9600e616a2e649b396284c48ff7c7b62c514046a Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Mon, 7 Feb 2022 16:24:48 +0000
-Subject: [PATCH 03/10] mips: ingenic: Do not manually reference the CPU clock
+Subject: [PATCH 03/19] mips: ingenic: Do not manually reference the CPU clock
 
 It isn't necessary to manually walk the device tree and enable
 the CPU clock anymore. The CPU and other necessary clocks are
@@ -53,5 +53,5 @@ index 3f44f14bdb33..c422bbc890ed 100644
  
  	return 0;
 -- 
-2.34.1
+2.35.1
 

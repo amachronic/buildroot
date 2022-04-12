@@ -1,0 +1,49 @@
+From 74a284474ece7272bf5d99ef3cd2aa05c9df083a Mon Sep 17 00:00:00 2001
+From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+Date: Sun, 10 Apr 2022 11:50:14 +0100
+Subject: [PATCH 08/19] dmaengine: jz4780: set DMA maximum segment size
+
+Set the maximum segment size, since the hardware can do transfers larger
+than the default 64 KiB returned by dma_get_max_seg_size().
+
+The maximum segment size is limited by the 24-bit transfer count field
+in DMA descriptors. The number of bytes is equal to the transfer count
+times the transfer size unit, which is selected by the driver based on
+the DMA buffer address and length of the transfer. The size unit can be
+as small as 1 byte, so set the maximum segment size to 2^24-1 bytes to
+ensure the transfer count will not overflow regardless of the size unit
+selected by the driver.
+---
+ drivers/dma/dma-jz4780.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/dma/dma-jz4780.c b/drivers/dma/dma-jz4780.c
+index fc513eb2b289..e2ec540e6519 100644
+--- a/drivers/dma/dma-jz4780.c
++++ b/drivers/dma/dma-jz4780.c
+@@ -8,6 +8,7 @@
+ 
+ #include <linux/clk.h>
+ #include <linux/dmapool.h>
++#include <linux/dma-mapping.h>
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/module.h>
+@@ -911,6 +912,14 @@ static int jz4780_dma_probe(struct platform_device *pdev)
+ 
+ 	dd = &jzdma->dma_device;
+ 
++	/*
++	 * The real segment size limit is dependent on the size unit selected
++	 * for the transfer. Because the size unit is selected automatically
++	 * and may be as small as 1 byte, use a safe limit of 2^24-1 bytes to
++	 * ensure the 24-bit transfer count in the descriptor cannot overflow.
++	 */
++	dma_set_max_seg_size(dev, 0xffffff);
++
+ 	dma_cap_set(DMA_MEMCPY, dd->cap_mask);
+ 	dma_cap_set(DMA_SLAVE, dd->cap_mask);
+ 	dma_cap_set(DMA_CYCLIC, dd->cap_mask);
+-- 
+2.35.1
+

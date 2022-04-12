@@ -1,7 +1,7 @@
-From 81812bb6a17643c8e5bd62d9241767283b4c87f6 Mon Sep 17 00:00:00 2001
+From 62ecddea6e6073dea2327c5194e7789f62316fdb Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Mon, 7 Feb 2022 16:14:49 +0000
-Subject: [PATCH 01/10] clk: ingenic: Allow specifying common clock flags
+Subject: [PATCH 01/19] clk: ingenic: Allow specifying common clock flags
 
 Provide a flags field for clocks under the ingenic-cgu driver,
 which can be used to set generic common clock framework flags
@@ -48,5 +48,5 @@ index bfc2b9c38a41..147b7df0d657 100644
  
  	union {
 -- 
-2.34.1
+2.35.1
 

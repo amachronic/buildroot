@@ -1,20 +1,6 @@
 == Patch numbering guide
 
-0xxx    Finished patches which have been sent upstream
-1xxx    Finished patches which are unsuitable for upstream, or have been rejected upstream
-2xxx    Anything under development
-
-== Series listing
-
-0001-0003
-  Clock bugfixes
-0004
-  Pinctrl bugfix
-0005-0007
-  TCU clock bugfixes
-0008-0010
-  Adds PWM support for X1000
-1001
-  RTC compatibility patch
-2001-2002
-  Kernel defconfigs and device trees
+0xxx    Anything merged upstream but not in buildroot's current kernel packages
+1xxx    Finished patches which have been sent upstream & pending review
+2xxx    Finished patches which are unsuitable for upstream, or have been rejected upstream
+3xxx    Anything under development

@@ -1,24 +1,22 @@
-From 1181b62a6c454246d9bd83eb26a481b38e708cf5 Mon Sep 17 00:00:00 2001
+From 50371106e2d55cc3915731675e33e3aba1cf2de7 Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Sat, 12 Feb 2022 13:21:35 +0000
-Subject: [PATCH 07/10] clk: ingenic-tcu: Fix missing TCU clock for X1000 SoC
+Subject: [PATCH 05/19] clk: ingenic-tcu: Fix missing TCU clock for X1000 SoCs
 
-The X1000 and X1830 have a TCU clock gate, so pass it to the driver.
-Without this the TCU can be gated automatically, which prevents timers
-from running.
+The TCU clock gate on X1000 wasn't requested by the driver and could
+be gated automatically later on in boot, which prevents timers from
+running and breaks PWM.
 
-Add a workaround to allow the driver to probe even if the TCU clock
-is missing on the affected SoCs; in this case the TCU clock is ignored,
-as it was before. With workarounds like "clk_ignore_unused" on the
-kernel command line, this allows users who upgrade the kernel but use
-the old device tree to boot successfully. They will now get a warning
-encouraging them to update the device tree.
+Add a workaround to support old device trees that don't specify the
+"tcu" clock gate. In this case the kernel will print a warning and
+attempt to continue without the clock, which is wrong, but it could
+work if "clk_ignore_unused" is in the kernel arguments.
 ---
- drivers/clk/ingenic/tcu.c | 37 +++++++++++++++++++++++++++----------
- 1 file changed, 27 insertions(+), 10 deletions(-)
+ drivers/clk/ingenic/tcu.c | 35 +++++++++++++++++++++++++----------
+ 1 file changed, 25 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/clk/ingenic/tcu.c b/drivers/clk/ingenic/tcu.c
-index 77acfbeb4830..03e9553bcac4 100644
+index 77acfbeb4830..201bf6e6b6e0 100644
 --- a/drivers/clk/ingenic/tcu.c
 +++ b/drivers/clk/ingenic/tcu.c
 @@ -31,6 +31,7 @@ struct ingenic_soc_info {
@@ -39,7 +37,7 @@ index 77acfbeb4830..03e9553bcac4 100644
  };
  
  static const struct of_device_id __maybe_unused ingenic_tcu_of_match[] __initconst = {
-@@ -355,14 +357,29 @@ static int __init ingenic_tcu_probe(struct device_node *np)
+@@ -355,14 +357,27 @@ static int __init ingenic_tcu_probe(struct device_node *np)
  		tcu->clk = of_clk_get_by_name(np, "tcu");
  		if (IS_ERR(tcu->clk)) {
  			ret = PTR_ERR(tcu->clk);
@@ -52,19 +50,17 @@ index 77acfbeb4830..03e9553bcac4 100644
 -			pr_crit("Unable to enable TCU clock\n");
 -			goto err_put_clk;
 +			/*
-+			 * Old versions of this driver incorrectly specified
-+			 * some SoCs as not having a TCU clock, so old device
-+			 * trees didn't define one. We try to allow the kernel
-+			 * to boot with an old device tree by just continuing
-+			 * on without the clock and hoping it won't get turned
-+			 * off (eg. with "clk_ignore_unused" kernel argument).
++			 * Old device trees for some SoCs did not include the
++			 * TCU clock because this driver (incorrectly) didn't
++			 * use it. In this case we complain loudly and attempt
++			 * to continue without the clock, which might work if
++			 * booting with workarounds like "clk_ignore_unused".
 +			 */
-+			if (ret == -EINVAL &&
-+			    tcu->soc_info->allow_missing_tcu_clk) {
++			if (tcu->soc_info->allow_missing_tcu_clk && ret == -EINVAL) {
 +				pr_warn("TCU clock missing from device tree, please update your device tree\n");
 +				tcu->clk = NULL;
 +			} else {
-+				pr_crit("Cannot get TCU clock\n");
++				pr_crit("Cannot get TCU clock from device tree\n");
 +				goto err_free_tcu;
 +			}
 +		} else {
@@ -76,7 +72,7 @@ index 77acfbeb4830..03e9553bcac4 100644
  		}
  	}
  
-@@ -432,10 +449,10 @@ static int __init ingenic_tcu_probe(struct device_node *np)
+@@ -432,10 +447,10 @@ static int __init ingenic_tcu_probe(struct device_node *np)
  			clk_hw_unregister(tcu->clocks->hws[i]);
  	kfree(tcu->clocks);
  err_clk_disable:
@@ -90,5 +86,5 @@ index 77acfbeb4830..03e9553bcac4 100644
  err_free_tcu:
  	kfree(tcu);
 -- 
-2.34.1
+2.35.1
 

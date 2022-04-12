@@ -1,0 +1,8 @@
+Q1 todo list
+------------
+
+* jz4740-i2s - enhance and add external codec support
+* add es9218p driver - should be straightforward
+* add LCD driver - this one requires more thought
+* figure out Bluetooth/WiFi - UART/SDIO attached, believed to be a BCM4343W
+* finish axp192 driver - 95% done, just needs battery capacity hookups

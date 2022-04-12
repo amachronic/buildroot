@@ -1,10 +1,13 @@
-From 2f3aa2402903452718b88fa135171f438b3676d2 Mon Sep 17 00:00:00 2001
+From 5a4715208caabc7b79d16d697e4f6947587a286d Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
-Date: Sat, 12 Feb 2022 13:29:33 +0000
-Subject: [PATCH 10/10] pwm: jz4740: Add support for X1000 SoC
+Date: Wed, 9 Feb 2022 23:11:42 +0000
+Subject: [PATCH] pwm: jz4740: Add support for X1000 SoC
 
 The X1000 has the same TCU / PWM hardware as other Ingenic SoCs,
 but it has only 5 channels.
+
+Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+Signed-off-by: Thierry Reding <thierry.reding@gmail.com>
 ---
  drivers/pwm/pwm-jz4740.c | 5 +++++
  1 file changed, 5 insertions(+)
@@ -30,5 +33,5 @@ index 23dc1fb770e2..a5fdf97c0d2e 100644
  };
  MODULE_DEVICE_TABLE(of, jz4740_pwm_dt_ids);
 -- 
-2.34.1
+2.35.1
 

@@ -1,7 +1,7 @@
-From 4e7ee67d72c1daa2c4a524281d5a86d9d9ce925b Mon Sep 17 00:00:00 2001
+From 3f2f08a53d5f27f6ce7e733ce9aa49d53ed08603 Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Fri, 25 Feb 2022 00:52:37 +0000
-Subject: [PATCH 2/3] FiiO M3K defconfig & dts
+Subject: [PATCH 19/19] FiiO M3K defconfig & dts
 
 ---
  arch/mips/boot/dts/ingenic/Makefile    |   1 +
@@ -360,5 +360,5 @@ index a9d72047fabe..b62e2492df5b 100644
  
  config MACH_JZ4725B
 -- 
-2.34.1
+2.35.1
 

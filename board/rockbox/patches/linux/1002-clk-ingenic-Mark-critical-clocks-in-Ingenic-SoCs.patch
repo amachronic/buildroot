@@ -1,7 +1,7 @@
-From bd48b63fb2b15ddc6bbc62a623a092f7fcfbbdfd Mon Sep 17 00:00:00 2001
+From 32973aac46be5fa0e43dec438a74926d13cbd066 Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Mon, 7 Feb 2022 16:20:48 +0000
-Subject: [PATCH 02/10] clk: ingenic: Mark critical clocks in Ingenic SoCs
+Subject: [PATCH 02/19] clk: ingenic: Mark critical clocks in Ingenic SoCs
 
 Consider the CPU, L2 cache, and memory as critical to ensure they
 are not disabled.
@@ -16,7 +16,7 @@ are not disabled.
  7 files changed, 16 insertions(+)
 
 diff --git a/drivers/clk/ingenic/jz4725b-cgu.c b/drivers/clk/ingenic/jz4725b-cgu.c
-index 744d136b721b..639fa4e29b05 100644
+index 15d61793f53b..c209a170be5d 100644
 --- a/drivers/clk/ingenic/jz4725b-cgu.c
 +++ b/drivers/clk/ingenic/jz4725b-cgu.c
 @@ -87,6 +87,7 @@ static const struct ingenic_cgu_clk_info jz4725b_cgu_clocks[] = {
@@ -171,5 +171,5 @@ index e01ec2dc7a1a..b08e318aa095 100644
  		.mux = { CGU_REG_DDRCDR, 30, 2 },
  		.div = { CGU_REG_DDRCDR, 0, 1, 4, 29, 28, 27 },
 -- 
-2.34.1
+2.35.1
 

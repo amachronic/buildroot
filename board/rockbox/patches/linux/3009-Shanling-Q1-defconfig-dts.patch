@@ -1,14 +1,14 @@
-From f8b99e47dabd63b462f1fbc4ca39c77ebd14b78a Mon Sep 17 00:00:00 2001
+From 5ea1bc4884312dda6a63511aa7c1c782422963f9 Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Fri, 25 Feb 2022 00:49:08 +0000
-Subject: [PATCH 1/3] Shanling Q1 defconfig & dts
+Subject: [PATCH 18/19] Shanling Q1 defconfig & dts
 
 ---
  arch/mips/boot/dts/ingenic/Makefile       |   1 +
- arch/mips/boot/dts/ingenic/shanlingq1.dts | 187 ++++++++++++++++++++++
- arch/mips/configs/shanlingq1_defconfig    | 118 ++++++++++++++
+ arch/mips/boot/dts/ingenic/shanlingq1.dts | 294 ++++++++++++++++++++++
+ arch/mips/configs/shanlingq1_defconfig    | 130 ++++++++++
  arch/mips/ingenic/Kconfig                 |   4 +
- 4 files changed, 310 insertions(+)
+ 4 files changed, 429 insertions(+)
  create mode 100644 arch/mips/boot/dts/ingenic/shanlingq1.dts
  create mode 100644 arch/mips/configs/shanlingq1_defconfig
 
@@ -25,10 +25,10 @@ index 54aa0c4e6091..89fd31500257 100644
  obj-$(CONFIG_BUILTIN_DTB)	+= $(addsuffix .o, $(dtb-y))
 diff --git a/arch/mips/boot/dts/ingenic/shanlingq1.dts b/arch/mips/boot/dts/ingenic/shanlingq1.dts
 new file mode 100644
-index 000000000000..6d26c681dbc7
+index 000000000000..799b997d6dc7
 --- /dev/null
 +++ b/arch/mips/boot/dts/ingenic/shanlingq1.dts
-@@ -0,0 +1,187 @@
+@@ -0,0 +1,294 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/dts-v1/;
 +
@@ -80,6 +80,12 @@ index 000000000000..6d26c681dbc7
 +            label = "next";
 +            linux,code = <KEY_NEXT>;
 +            gpios = <&gpb 22 GPIO_ACTIVE_LOW>;
++        };
++
++        button@4 {
++            label = "headphones";
++            linux,code = <KEY_HP>;
++            gpios = <&axp_gpio 1 GPIO_ACTIVE_HIGH>;
 +        };
 +    };
 +
@@ -184,6 +190,102 @@ index 000000000000..6d26c681dbc7
 +
 +    pinctrl-names = "default";
 +    pinctrl-0 = <&pins_i2c2>;
++
++    axp192: pmic@34 {
++        compatible = "x-powers,axp192";
++        reg = <0x34>;
++
++        interrupt-parent = <&gpc>;
++        interrupts = <21 IRQ_TYPE_LEVEL_LOW>;
++
++        interrupt-controller;
++        #interrupt-cells = <1>;
++
++        pinctrl-names = "default";
++        pinctrl-0 = <&pins_axp192>;
++
++        battery: battery {
++            compatible = "simple-battery";
++            device-chemistry = "lithium-ion";
++
++            over-voltage-threshold-microvolt = <4400000>;
++            voltage-min-design-microvolt = <3300000>;
++            voltage-max-design-microvolt = <4200000>;
++            energy-full-design-microamp-hours = <1100000>;
++            constant-charge-current-max-microamp = <630000>;
++            constant-charge-voltage-max-microvolt = <4200000>;
++
++            ocv-capacity-table-celsius = <20>;
++            ocv-capacity-table-0 = <4159000 100>, <4050000 90>, <3980000 80>,
++                                   <3906000 70>,  <3836000 60>, <3786000 50>,
++                                   <3757000 40>,  <3723000 30>, <3697000 20>,
++                                   <3639000 10>,  <3400000 0>;
++        };
++
++        axp_gpio: gpio {
++            compatible = "x-powers,axp192-gpio";
++            gpio-controller;
++            #gpio-cells = <2>;
++        };
++
++        axp_adc: adc {
++            compatible = "x-powers,axp192-adc";
++            #io-channel-cells = <1>;
++        };
++
++        ac_power_supply: ac-power {
++            compatible = "x-powers,axp202-ac-power-supply";
++        };
++
++        usb_power_supply: usb-power {
++            compatible = "x-powers,axp192-usb-power-supply";
++        };
++
++        battery_power_supply: battery-power {
++            compatible = "x-powers,axp192-battery-power-supply";
++            monitored-battery = <&battery>;
++        };
++
++        regulators {
++            x-powers,dcdc-freq = <1500>;
++
++            reg_dcdc1: dcdc1 {
++                regulator-always-on;//temp
++                regulator-name = "dcdc1";
++            };
++
++            reg_dcdc2: dcdc2 {
++                regulator-always-on;//temp
++                regulator-name = "dcdc2";
++            };
++
++            reg_dcdc3: dcdc3 {
++                regulator-always-on;//temp
++                regulator-name = "dcdc3";
++            };
++
++            reg_ldo1: ldo1 {
++                /* LDO1 is a fixed output and cannot be disabled */
++                regulator-always-on;
++                regulator-name = "ldo1";
++            };
++
++            reg_ldo2: ldo2 {
++                regulator-always-on;//temp
++                regulator-name = "ldo2";
++            };
++
++            reg_ldo3: ldo3 {
++                regulator-always-on;//temp
++                regulator-name = "ldo3";
++            };
++
++            reg_ldo_io0: ldo_io0 {
++                regulator-name = "ldo_io0";
++                status = "disabled";
++            };
++        };
++    };
 +};
 +
 +&pinctrl {
@@ -215,13 +317,18 @@ index 000000000000..6d26c681dbc7
 +        groups = "i2c2-data";
 +        bias-pull-up;
 +    };
++
++    pins_axp192: axp192 {
++        pins = "PC21";
++        bias-pull-up;
++    };
 +};
 diff --git a/arch/mips/configs/shanlingq1_defconfig b/arch/mips/configs/shanlingq1_defconfig
 new file mode 100644
-index 000000000000..eb201a90372e
+index 000000000000..fe88607f2e06
 --- /dev/null
 +++ b/arch/mips/configs/shanlingq1_defconfig
-@@ -0,0 +1,118 @@
+@@ -0,0 +1,130 @@
 +# general stuff
 +CONFIG_CC_OPTIMIZE_FOR_SIZE=y
 +CONFIG_EMBEDDED=y
@@ -292,6 +399,18 @@ index 000000000000..eb201a90372e
 +CONFIG_REGULATOR=y
 +CONFIG_REGULATOR_FIXED_VOLTAGE=y
 +
++# axp192
++CONFIG_MFD_AXP20X_I2C=y
++CONFIG_PINCTRL_AXP192=y
++CONFIG_IIO=y
++CONFIG_IIO_CONFIGFS=y
++CONFIG_AXP20X_ADC=y
++CONFIG_POWER_SUPPLY=y
++CONFIG_AXP20X_POWER=y
++CONFIG_BATTERY_AXP20X=y
++CONFIG_CHARGER_AXP20X=y
++CONFIG_REGULATOR_AXP20X=y
++
 +# filesystems etc
 +CONFIG_EXT4_FS=y
 +CONFIG_EXT4_FS_POSIX_ACL=y
@@ -356,5 +475,5 @@ index f595b339a4b8..a9d72047fabe 100644
  
  config MACH_JZ4725B
 -- 
-2.34.1
+2.35.1
 

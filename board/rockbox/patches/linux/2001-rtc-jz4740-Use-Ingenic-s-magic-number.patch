@@ -1,7 +1,7 @@
-From cc4500ec630043b800db60d25f4fb77ee03cf97c Mon Sep 17 00:00:00 2001
+From e5c28eff62810a23998ed4fdaa16d47a112ea40c Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Sat, 26 Feb 2022 11:44:21 +0000
-Subject: [PATCH 3/3] rtc: jz4740: Use Ingenic's magic number
+Subject: [PATCH 17/19] rtc: jz4740: Use Ingenic's magic number
 
 This avoids conflicts between mainline kernels and kernels built
 from Ingenic's sources, allowing them to both use the RTC.
@@ -41,5 +41,5 @@ index 6e51df72fd65..28f44da802e8 100644
  
  static int jz4740_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 -- 
-2.34.1
+2.35.1
 
