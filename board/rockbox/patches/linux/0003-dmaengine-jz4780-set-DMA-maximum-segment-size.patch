@@ -1,7 +1,7 @@
-From 74a284474ece7272bf5d99ef3cd2aa05c9df083a Mon Sep 17 00:00:00 2001
+From 2128565a8d3055623f651712b7faa3d66ce4f02c Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
-Date: Sun, 10 Apr 2022 11:50:14 +0100
-Subject: [PATCH 08/19] dmaengine: jz4780: set DMA maximum segment size
+Date: Mon, 11 Apr 2022 16:36:18 +0100
+Subject: [PATCH] dmaengine: jz4780: set DMA maximum segment size
 
 Set the maximum segment size, since the hardware can do transfers larger
 than the default 64 KiB returned by dma_get_max_seg_size().
@@ -13,6 +13,10 @@ the DMA buffer address and length of the transfer. The size unit can be
 as small as 1 byte, so set the maximum segment size to 2^24-1 bytes to
 ensure the transfer count will not overflow regardless of the size unit
 selected by the driver.
+
+Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+Link: https://lore.kernel.org/r/20220411153618.49876-1-aidanmacdonald.0x0@gmail.com
+Signed-off-by: Vinod Koul <vkoul@kernel.org>
 ---
  drivers/dma/dma-jz4780.c | 9 +++++++++
  1 file changed, 9 insertions(+)

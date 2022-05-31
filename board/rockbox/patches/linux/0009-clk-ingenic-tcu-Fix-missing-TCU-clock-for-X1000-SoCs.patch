@@ -1,7 +1,7 @@
-From 50371106e2d55cc3915731675e33e3aba1cf2de7 Mon Sep 17 00:00:00 2001
+From e98839fb56ea2b5bdcea47128871df4a587fc181 Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
-Date: Sat, 12 Feb 2022 13:21:35 +0000
-Subject: [PATCH 05/19] clk: ingenic-tcu: Fix missing TCU clock for X1000 SoCs
+Date: Tue, 12 Apr 2022 13:27:50 +0100
+Subject: [PATCH] clk: ingenic-tcu: Fix missing TCU clock for X1000 SoCs
 
 The TCU clock gate on X1000 wasn't requested by the driver and could
 be gated automatically later on in boot, which prevents timers from
@@ -11,6 +11,11 @@ Add a workaround to support old device trees that don't specify the
 "tcu" clock gate. In this case the kernel will print a warning and
 attempt to continue without the clock, which is wrong, but it could
 work if "clk_ignore_unused" is in the kernel arguments.
+
+Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+Link: https://lore.kernel.org/r/20220412122750.279058-3-aidanmacdonald.0x0@gmail.com
+Reviewed-by: Paul Cercueil <paul@crapouillou.net>
+Signed-off-by: Stephen Boyd <sboyd@kernel.org>
 ---
  drivers/clk/ingenic/tcu.c | 35 +++++++++++++++++++++++++----------
  1 file changed, 25 insertions(+), 10 deletions(-)

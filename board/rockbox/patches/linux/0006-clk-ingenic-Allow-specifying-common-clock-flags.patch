@@ -1,13 +1,22 @@
-From 62ecddea6e6073dea2327c5194e7789f62316fdb Mon Sep 17 00:00:00 2001
+From bacf743e925d10076c0ba9b9289d0e827c3db7f1 Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
-Date: Mon, 7 Feb 2022 16:14:49 +0000
-Subject: [PATCH 01/19] clk: ingenic: Allow specifying common clock flags
+Date: Thu, 28 Apr 2022 17:44:52 +0100
+Subject: [PATCH] clk: ingenic: Allow specifying common clock flags
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Provide a flags field for clocks under the ingenic-cgu driver,
 which can be used to set generic common clock framework flags
 on the created clocks. For example, the CLK_IS_CRITICAL flag
 is needed for some clocks (such as CPU or memory) to stop them
 being automatically disabled.
+
+Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+Reviewed-by: Paul Cercueil <paul@crapouillou.net>
+Link: https://lore.kernel.org/r/20220428164454.17908-2-aidanmacdonald.0x0@gmail.com
+Tested-by: 周琰杰 (Zhou Yanjie) <zhouyanjie@wanyeetech.com> # On X1000 and X1830
+Signed-off-by: Stephen Boyd <sboyd@kernel.org>
 ---
  drivers/clk/ingenic/cgu.c | 2 +-
  drivers/clk/ingenic/cgu.h | 3 +++

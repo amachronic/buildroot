@@ -1,8 +1,7 @@
-From 9dcc30b9f1ba58908aa2a37907b814ba9efcd151 Mon Sep 17 00:00:00 2001
+From afadb04f1d6e74b18a253403f5274cde5e3fd7bd Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
-Date: Sun, 10 Apr 2022 12:05:10 +0100
-Subject: [PATCH 09/19] mmc: jz4740: Apply DMA engine limits to maximum segment
- size
+Date: Mon, 11 Apr 2022 16:37:53 +0100
+Subject: [PATCH] mmc: jz4740: Apply DMA engine limits to maximum segment size
 
 Do what is done in other DMA-enabled MMC host drivers (cf. host/mmci.c) and
 limit the maximum segment size based on the DMA engine's capabilities. This
@@ -41,6 +40,10 @@ Call Trace:
 [<80101dcc>] ret_from_kernel_thread+0x14/0x1c
 
 ---[ end trace 0000000000000000 ]---
+
+Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+Link: https://lore.kernel.org/r/20220411153753.50443-1-aidanmacdonald.0x0@gmail.com
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 ---
  drivers/mmc/host/jz4740_mmc.c | 20 ++++++++++++++++++++
  1 file changed, 20 insertions(+)

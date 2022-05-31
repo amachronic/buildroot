@@ -1,12 +1,21 @@
-From 9600e616a2e649b396284c48ff7c7b62c514046a Mon Sep 17 00:00:00 2001
+From 2b0f3d70ce7ca68c10b3a5beaf2da6a03c5b3c11 Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
-Date: Mon, 7 Feb 2022 16:24:48 +0000
-Subject: [PATCH 03/19] mips: ingenic: Do not manually reference the CPU clock
+Date: Thu, 28 Apr 2022 17:44:54 +0100
+Subject: [PATCH] mips: ingenic: Do not manually reference the CPU clock
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 It isn't necessary to manually walk the device tree and enable
 the CPU clock anymore. The CPU and other necessary clocks are
 now flagged as critical in the clock driver, which accomplishes
 the same thing in a more declarative fashion.
+
+Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+Reviewed-by: Paul Cercueil <paul@crapouillou.net>
+Link: https://lore.kernel.org/r/20220428164454.17908-4-aidanmacdonald.0x0@gmail.com
+Tested-by: 周琰杰 (Zhou Yanjie) <zhouyanjie@wanyeetech.com> # On X1000 and X1830
+Signed-off-by: Stephen Boyd <sboyd@kernel.org>
 ---
  arch/mips/generic/board-ingenic.c | 26 --------------------------
  1 file changed, 26 deletions(-)
