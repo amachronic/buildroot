@@ -1,0 +1,98 @@
+From e0da10382983e917c21cf81bb171a9adc09a166a Mon Sep 17 00:00:00 2001
+From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+Date: Fri, 3 Jun 2022 18:07:57 +0100
+Subject: [PATCH 28/32] power: axp20x_battery: Support battery status without
+ fuel gauge
+
+Add a "has_fg" flag to indicate that the chip has a fuel gauge.
+Report battery full status on chips with no fuel gauge using the
+battery voltage.
+
+Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+---
+ drivers/power/supply/axp20x_battery.c | 34 ++++++++++++++++++++++++++-
+ 1 file changed, 33 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/power/supply/axp20x_battery.c b/drivers/power/supply/axp20x_battery.c
+index 87fb958f2224..e9547e2d7c48 100644
+--- a/drivers/power/supply/axp20x_battery.c
++++ b/drivers/power/supply/axp20x_battery.c
+@@ -62,6 +62,7 @@ struct axp_data {
+ 	int	ccc_scale;
+ 	int	ccc_offset;
+ 	const int *ccc_table;
++	bool	has_fg;
+ 	bool	has_fg_valid;
+ 	int	(*get_max_voltage)(struct axp20x_batt_ps *batt, int *val);
+ 	int	(*set_max_voltage)(struct axp20x_batt_ps *batt, int val);
+@@ -190,7 +191,7 @@ static int axp20x_battery_get_prop(struct power_supply *psy,
+ 				   union power_supply_propval *val)
+ {
+ 	struct axp20x_batt_ps *axp20x_batt = power_supply_get_drvdata(psy);
+-	int ret = 0, reg, val1;
++	int ret = 0, reg, val1, val2;
+ 
+ 	switch (psp) {
+ 	case POWER_SUPPLY_PROP_PRESENT:
+@@ -224,6 +225,34 @@ static int axp20x_battery_get_prop(struct power_supply *psy,
+ 			return 0;
+ 		}
+ 
++		/*
++		 * If the chip does not have a fuel gauge, we check battery full status
++		 * using voltage instead.
++		 */
++		if (!axp20x_batt->data->has_fg) {
++			ret = axp20x_batt->data->get_max_voltage(axp20x_batt, &val1);
++			if (ret)
++				return ret;
++
++			ret = iio_read_channel_processed(axp20x_batt->batt_v, &val2);
++			if (ret)
++				return ret;
++
++			/* IIO subsystem reports voltage in mV but we need uV */
++			val2 *= 1000;
++
++			/*
++			 * According to the AXP192 datasheet, charging will restart if
++			 * the battery voltage drops below V_rch = V_tgt - 0.1 V, so we
++			 * report the battery is full if its voltage is at least V_rch.
++			 */
++			if (val2 >= val1 - 100000)
++				val->intval = POWER_SUPPLY_STATUS_FULL;
++			else
++				val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
++			break;
++		}
++
+ 		ret = regmap_read(axp20x_batt->regmap, AXP20X_FG_RES, &val1);
+ 		if (ret)
+ 			return ret;
+@@ -546,6 +575,7 @@ static const struct power_supply_desc axp20x_batt_ps_desc = {
+ static const struct axp_data axp209_data = {
+ 	.ccc_scale = 100000,
+ 	.ccc_offset = 300000,
++	.has_fg = true,
+ 	.get_max_voltage = axp20x_battery_get_max_voltage,
+ 	.set_max_voltage = axp20x_battery_set_max_voltage,
+ };
+@@ -553,6 +583,7 @@ static const struct axp_data axp209_data = {
+ static const struct axp_data axp221_data = {
+ 	.ccc_scale = 150000,
+ 	.ccc_offset = 300000,
++	.has_fg = true,
+ 	.has_fg_valid = true,
+ 	.get_max_voltage = axp22x_battery_get_max_voltage,
+ 	.set_max_voltage = axp22x_battery_set_max_voltage,
+@@ -561,6 +592,7 @@ static const struct axp_data axp221_data = {
+ static const struct axp_data axp813_data = {
+ 	.ccc_scale = 200000,
+ 	.ccc_offset = 200000,
++	.has_fg = true,
+ 	.has_fg_valid = true,
+ 	.get_max_voltage = axp813_battery_get_max_voltage,
+ 	.set_max_voltage = axp20x_battery_set_max_voltage,
+-- 
+2.35.1
+

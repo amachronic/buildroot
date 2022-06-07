@@ -1,7 +1,7 @@
-From e8f20b3f4e85fd90634c9ee06cff1aea15b15216 Mon Sep 17 00:00:00 2001
+From 693117a7239ec9bd8bf8ad2e21b37b5d260692e6 Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Fri, 15 Apr 2022 12:02:50 +0100
-Subject: [PATCH 16/19] pinctrl: Add AXP192 pin control driver
+Subject: [PATCH 26/32] pinctrl: Add AXP192 pin control driver
 
 The AXP192 PMIC's GPIO registers are much different from the GPIO
 registers of the AXP20x and AXP813 PMICs supported by the existing
@@ -11,15 +11,17 @@ the AXP192, rather than add support in the existing axp20x driver.
 The pinctrl-axp192 driver is considerably more flexible in terms of
 register layout and should be able to support other X-Powers PMICs.
 Interrupts and pull down resistor configuration are supported too.
+
+Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 ---
  drivers/pinctrl/Kconfig          |  14 +
  drivers/pinctrl/Makefile         |   1 +
- drivers/pinctrl/pinctrl-axp192.c | 587 +++++++++++++++++++++++++++++++
- 3 files changed, 602 insertions(+)
+ drivers/pinctrl/pinctrl-axp192.c | 589 +++++++++++++++++++++++++++++++
+ 3 files changed, 604 insertions(+)
  create mode 100644 drivers/pinctrl/pinctrl-axp192.c
 
 diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index f52960d2dfbe..a71e35de333d 100644
+index 6fc56d6598e2..68d887f2a5a4 100644
 --- a/drivers/pinctrl/Kconfig
 +++ b/drivers/pinctrl/Kconfig
 @@ -113,6 +113,20 @@ config PINCTRL_AT91PIO4
@@ -44,23 +46,23 @@ index f52960d2dfbe..a71e35de333d 100644
  	tristate "X-Powers AXP209 PMIC pinctrl and GPIO Support"
  	depends on MFD_AXP20X
 diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index e76f5cdc64b0..9d2b6420c5dd 100644
+index f64d29f614ec..1fd328fdae32 100644
 --- a/drivers/pinctrl/Makefile
 +++ b/drivers/pinctrl/Makefile
-@@ -15,6 +15,7 @@ obj-$(CONFIG_OF)	+= devicetree.o
- obj-$(CONFIG_GENERIC_PINCONF)	+= pinconf-generic.o
- obj-$(CONFIG_PINCTRL_ARTPEC6)	+= pinctrl-artpec6.o
+@@ -15,6 +15,7 @@ obj-$(CONFIG_PINCTRL_ARTPEC6)	+= pinctrl-artpec6.o
  obj-$(CONFIG_PINCTRL_AS3722)	+= pinctrl-as3722.o
-+obj-$(CONFIG_PINCTRL_AXP192)	+= pinctrl-axp192.o
- obj-$(CONFIG_PINCTRL_AXP209)	+= pinctrl-axp209.o
  obj-$(CONFIG_PINCTRL_AT91)	+= pinctrl-at91.o
  obj-$(CONFIG_PINCTRL_AT91PIO4)	+= pinctrl-at91-pio4.o
++obj-$(CONFIG_PINCTRL_AXP192)	+= pinctrl-axp192.o
+ obj-$(CONFIG_PINCTRL_AXP209)	+= pinctrl-axp209.o
+ obj-$(CONFIG_PINCTRL_BM1880)	+= pinctrl-bm1880.o
+ obj-$(CONFIG_PINCTRL_DA850_PUPD) += pinctrl-da850-pupd.o
 diff --git a/drivers/pinctrl/pinctrl-axp192.c b/drivers/pinctrl/pinctrl-axp192.c
 new file mode 100644
-index 000000000000..65bd4430a0ce
+index 000000000000..0ff2d0b84978
 --- /dev/null
 +++ b/drivers/pinctrl/pinctrl-axp192.c
-@@ -0,0 +1,587 @@
+@@ -0,0 +1,589 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +/*
 + * AXP192 pinctrl and GPIO driver
@@ -103,7 +105,7 @@ index 000000000000..65bd4430a0ce
 +	const char		*name;
 +	/* Mux value written to the control register to select the function (-1 if unsupported) */
 +	const u8		*muxvals;
-+	const char* const	*groups;
++	const char * const	*groups;
 +	unsigned int		ngroups;
 +};
 +
@@ -137,13 +139,14 @@ index 000000000000..65bd4430a0ce
 +	PINCTRL_PIN(5, "N_RSTO"),
 +};
 +
-+static const char* const axp192_io_groups[] = { "GPIO0", "GPIO1", "GPIO2", "GPIO3", "GPIO4", "N_RSTO" };
-+static const char* const axp192_ldo_groups[] = { "GPIO0" };
-+static const char* const axp192_pwm_groups[] = { "GPIO1", "GPIO2" };
-+static const char* const axp192_adc_groups[] = { "GPIO0", "GPIO1", "GPIO2", "GPIO3" };
-+static const char* const axp192_extended_io_groups[] = { "GPIO0", "GPIO1", "GPIO2" };
-+static const char* const axp192_ext_chg_ctl_groups[] = { "GPIO3", "GPIO4" };
-+static const char* const axp192_ldo_status_groups[] = { "N_RSTO" };
++static const char * const axp192_io_groups[] = { "GPIO0", "GPIO1", "GPIO2",
++						 "GPIO3", "GPIO4", "N_RSTO" };
++static const char * const axp192_ldo_groups[] = { "GPIO0" };
++static const char * const axp192_pwm_groups[] = { "GPIO1", "GPIO2" };
++static const char * const axp192_adc_groups[] = { "GPIO0", "GPIO1", "GPIO2", "GPIO3" };
++static const char * const axp192_extended_io_groups[] = { "GPIO0", "GPIO1", "GPIO2" };
++static const char * const axp192_ext_chg_ctl_groups[] = { "GPIO3", "GPIO4" };
++static const char * const axp192_ldo_status_groups[] = { "N_RSTO" };
 +
 +static const u8 axp192_output_muxvals[]		= {  0,  0,  0,  1,  1,  2 };
 +static const u8 axp192_input_muxvals[]		= {  1,  1,  1,  2,  2,  3 };
@@ -328,7 +331,7 @@ index 000000000000..65bd4430a0ce
 +	return pctl->irqs[offset];
 +}
 +
-+static int axp192_pinconf_get_pull_down(struct pinctrl_dev *pctldev, unsigned pin)
++static int axp192_pinconf_get_pull_down(struct pinctrl_dev *pctldev, unsigned int pin)
 +{
 +	struct axp192_pctl *pctl = pinctrl_dev_get_drvdata(pctldev);
 +	const struct axp192_pctl_reg_info *reginfo = &pctl->desc->pull_down_regs[pin];
@@ -345,7 +348,7 @@ index 000000000000..65bd4430a0ce
 +	return !!(val & reginfo->mask);
 +}
 +
-+static int axp192_pinconf_set_pull_down(struct pinctrl_dev *pctldev, unsigned pin, int value)
++static int axp192_pinconf_set_pull_down(struct pinctrl_dev *pctldev, unsigned int pin, int value)
 +{
 +	struct axp192_pctl *pctl = pinctrl_dev_get_drvdata(pctldev);
 +	const struct axp192_pctl_reg_info *reginfo = &pctl->desc->pull_down_regs[pin];
@@ -357,7 +360,7 @@ index 000000000000..65bd4430a0ce
 +				  value ? reginfo->mask : 0);
 +}
 +
-+static int axp192_pinconf_get(struct pinctrl_dev *pctldev, unsigned pin, unsigned long *config)
++static int axp192_pinconf_get(struct pinctrl_dev *pctldev, unsigned int pin, unsigned long *config)
 +{
 +	enum pin_config_param param = pinconf_to_config_param(*config);
 +	unsigned int arg = 1;
@@ -388,11 +391,11 @@ index 000000000000..65bd4430a0ce
 +	return 0;
 +}
 +
-+static int axp192_pinconf_set(struct pinctrl_dev *pctldev, unsigned pin,
-+			      unsigned long *configs, unsigned num_configs)
++static int axp192_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
++			      unsigned long *configs, unsigned int num_configs)
 +{
 +	int ret;
-+	unsigned cfg;
++	unsigned int cfg;
 +
 +	for (cfg = 0; cfg < num_configs; ++cfg) {
 +		switch (pinconf_to_config_param(configs[cfg])) {
@@ -469,7 +472,8 @@ index 000000000000..65bd4430a0ce
 +	return 0;
 +}
 +
-+static int axp192_pmx_set_mux(struct pinctrl_dev *pctldev, unsigned int function, unsigned int group)
++static int axp192_pmx_set_mux(struct pinctrl_dev *pctldev,
++			      unsigned int function, unsigned int group)
 +{
 +	struct axp192_pctl *pctl = pinctrl_dev_get_drvdata(pctldev);
 +	const u8 *muxvals = pctl->desc->functions[function].muxvals;

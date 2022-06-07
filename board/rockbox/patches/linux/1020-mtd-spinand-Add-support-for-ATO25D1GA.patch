@@ -1,12 +1,14 @@
-From 7a0e0559f44de2b90e97aec3a4bd73232bd44c76 Mon Sep 17 00:00:00 2001
+From f3348b6a5fe356e7e8e00ebbec9eae3727f0006b Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Sun, 27 Mar 2022 18:01:32 +0100
-Subject: [PATCH] mtd: spinand: Add support for ATO25D1GA
+Subject: [PATCH 12/32] mtd: spinand: Add support for ATO25D1GA
 
-Add support for a new manufacturer (ATO) and the ATO25D1GA SPI NAND flash.
+Add support for the ATO25D1GA SPI NAND flash.
 
 Datasheet:
-https://atta.szlcsc.com/upload/public/pdf/source/20191212/C469320_04599D67B03B078044EB65FF5AEDDDE9.pdf
+- https://atta.szlcsc.com/upload/public/pdf/source/20191212/C469320_04599D67B03B078044EB65FF5AEDDDE9.pdf
+
+Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 ---
  drivers/mtd/nand/spi/Makefile |  2 +-
  drivers/mtd/nand/spi/ato.c    | 86 +++++++++++++++++++++++++++++++++++
@@ -16,13 +18,13 @@ https://atta.szlcsc.com/upload/public/pdf/source/20191212/C469320_04599D67B03B07
  create mode 100644 drivers/mtd/nand/spi/ato.c
 
 diff --git a/drivers/mtd/nand/spi/Makefile b/drivers/mtd/nand/spi/Makefile
-index 9662b9c1d5a9..3c8f85306053 100644
+index 9662b9c1d5a9..8eb3d8045e3b 100644
 --- a/drivers/mtd/nand/spi/Makefile
 +++ b/drivers/mtd/nand/spi/Makefile
 @@ -1,3 +1,3 @@
  # SPDX-License-Identifier: GPL-2.0
 -spinand-objs := core.o gigadevice.o macronix.o micron.o paragon.o toshiba.o winbond.o
-+spinand-objs := ato.o core.o gigadevice.o macronix.o micron.o paragon.o toshiba.o winbond.o
++spinand-objs := core.o ato.o gigadevice.o macronix.o micron.o paragon.o toshiba.o winbond.o
  obj-$(CONFIG_MTD_SPI_NAND) += spinand.o
 diff --git a/drivers/mtd/nand/spi/ato.c b/drivers/mtd/nand/spi/ato.c
 new file mode 100644
@@ -117,29 +119,29 @@ index 000000000000..82b377c06812
 +	.ops = &ato_spinand_manuf_ops,
 +};
 diff --git a/drivers/mtd/nand/spi/core.c b/drivers/mtd/nand/spi/core.c
-index ff8336870bc0..751e2b6657a9 100644
+index 2c8685f1f2fa..1c2bc4b03017 100644
 --- a/drivers/mtd/nand/spi/core.c
 +++ b/drivers/mtd/nand/spi/core.c
-@@ -933,6 +933,7 @@ static const struct spinand_manufacturer *spinand_manufacturers[] = {
- 	&paragon_spinand_manufacturer,
- 	&toshiba_spinand_manufacturer,
- 	&winbond_spinand_manufacturer,
-+	&ato_spinand_manufacturer,
+@@ -896,6 +896,7 @@ static const struct nand_ops spinand_ops = {
  };
  
- static int spinand_manufacturer_match(struct spinand_device *spinand,
+ static const struct spinand_manufacturer *spinand_manufacturers[] = {
++	&ato_spinand_manufacturer,
+ 	&gigadevice_spinand_manufacturer,
+ 	&macronix_spinand_manufacturer,
+ 	&micron_spinand_manufacturer,
 diff --git a/include/linux/mtd/spinand.h b/include/linux/mtd/spinand.h
-index 3aa28240a77f..7f95de47e438 100644
+index 6988956b8492..0a2cfcd69a0f 100644
 --- a/include/linux/mtd/spinand.h
 +++ b/include/linux/mtd/spinand.h
-@@ -266,6 +266,7 @@ extern const struct spinand_manufacturer micron_spinand_manufacturer;
- extern const struct spinand_manufacturer paragon_spinand_manufacturer;
- extern const struct spinand_manufacturer toshiba_spinand_manufacturer;
- extern const struct spinand_manufacturer winbond_spinand_manufacturer;
-+extern const struct spinand_manufacturer ato_spinand_manufacturer;
+@@ -260,6 +260,7 @@ struct spinand_manufacturer {
+ };
  
- /**
-  * struct spinand_op_variants - SPI NAND operation variants
+ /* SPI NAND manufacturers */
++extern const struct spinand_manufacturer ato_spinand_manufacturer;
+ extern const struct spinand_manufacturer gigadevice_spinand_manufacturer;
+ extern const struct spinand_manufacturer macronix_spinand_manufacturer;
+ extern const struct spinand_manufacturer micron_spinand_manufacturer;
 -- 
 2.35.1
 

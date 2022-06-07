@@ -1,8 +1,11 @@
-From 5c5f6cf73fe4156c1a106accceaccf4ee4d314c2 Mon Sep 17 00:00:00 2001
+From db8209add3cb6688c211f083891e07a1f12ece41 Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Fri, 15 Apr 2022 18:10:29 +0100
-Subject: [PATCH 12/19] regulator: axp20x: Add support for AXP192
+Subject: [PATCH 21/32] regulator: axp20x: Add support for AXP192
 
+Add support for the AXP192 PMIC.
+
+Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 ---
  drivers/regulator/axp20x-regulator.c | 101 ++++++++++++++++++++++++---
  1 file changed, 92 insertions(+), 9 deletions(-)

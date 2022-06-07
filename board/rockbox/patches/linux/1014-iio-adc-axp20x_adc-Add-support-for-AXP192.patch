@@ -1,46 +1,42 @@
-From cfb5b6b3a59e3c9bdf9288b55fb9795a90b12972 Mon Sep 17 00:00:00 2001
+From 8e012bb602470e05259031629523584a073795da Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Fri, 15 Apr 2022 11:00:22 +0100
-Subject: [PATCH 13/19] iio: adc: axp20x_adc: Add support for AXP192
+Subject: [PATCH 24/32] iio: adc: axp20x_adc: Add support for AXP192
 
 The AXP192 is identical to the AXP20x, except for the addition of
 two more GPIO ADC channels.
+
+Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 ---
- drivers/iio/adc/axp20x_adc.c | 289 +++++++++++++++++++++++++++++++++--
- 1 file changed, 280 insertions(+), 9 deletions(-)
+ drivers/iio/adc/axp20x_adc.c | 285 ++++++++++++++++++++++++++++++++++-
+ 1 file changed, 277 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/iio/adc/axp20x_adc.c b/drivers/iio/adc/axp20x_adc.c
-index 53bf7d4899d2..7d2bf9529420 100644
+index 0260433782d8..fcd37d39884d 100644
 --- a/drivers/iio/adc/axp20x_adc.c
 +++ b/drivers/iio/adc/axp20x_adc.c
-@@ -21,6 +21,9 @@
+@@ -22,11 +22,19 @@
  #include <linux/iio/machine.h>
  #include <linux/mfd/axp20x.h>
  
 +#define AXP192_ADC_EN1_MASK			GENMASK(7, 0)
-+#define AXP192_ADC_EN2_MASK			(BIT(7) | GENMASK(3, 0))
++#define AXP192_ADC_EN2_MASK			(GENMASK(3, 0) | BIT(7))
 +
  #define AXP20X_ADC_EN1_MASK			GENMASK(7, 0)
- 
  #define AXP20X_ADC_EN2_MASK			(GENMASK(3, 2) | BIT(7))
-@@ -31,6 +34,15 @@
- #define AXP20X_GPIO10_IN_RANGE_GPIO0_VAL(x)	((x) & BIT(0))
- #define AXP20X_GPIO10_IN_RANGE_GPIO1_VAL(x)	(((x) & BIT(0)) << 1)
+ 
+ #define AXP22X_ADC_EN1_MASK			(GENMASK(7, 5) | BIT(0))
  
 +#define AXP192_GPIO30_IN_RANGE_GPIO0		BIT(0)
 +#define AXP192_GPIO30_IN_RANGE_GPIO1		BIT(1)
 +#define AXP192_GPIO30_IN_RANGE_GPIO2		BIT(2)
 +#define AXP192_GPIO30_IN_RANGE_GPIO3		BIT(3)
-+#define AXP192_GPIO30_IN_RANGE_GPIO0_VAL(x)	((x) & BIT(0))
-+#define AXP192_GPIO30_IN_RANGE_GPIO1_VAL(x)	(((x) & BIT(0)) << 1)
-+#define AXP192_GPIO30_IN_RANGE_GPIO2_VAL(x)	(((x) & BIT(0)) << 2)
-+#define AXP192_GPIO30_IN_RANGE_GPIO3_VAL(x)	(((x) & BIT(0)) << 3)
 +
- #define AXP20X_ADC_RATE_MASK			GENMASK(7, 6)
- #define AXP813_V_I_ADC_RATE_MASK		GENMASK(5, 4)
- #define AXP813_ADC_RATE_MASK			(AXP20X_ADC_RATE_MASK | AXP813_V_I_ADC_RATE_MASK)
-@@ -70,6 +82,25 @@ struct axp20x_adc_iio {
- 	const struct axp_data	*data;
+ #define AXP20X_GPIO10_IN_RANGE_GPIO0		BIT(0)
+ #define AXP20X_GPIO10_IN_RANGE_GPIO1		BIT(1)
+ 
+@@ -83,6 +91,25 @@ struct axp_data {
+ 	enum axp20x_variants		axp20x_id;
  };
  
 +enum axp192_adc_channel_v {
@@ -65,7 +61,7 @@ index 53bf7d4899d2..7d2bf9529420 100644
  enum axp20x_adc_channel_v {
  	AXP20X_ACIN_V = 0,
  	AXP20X_VBUS_V,
-@@ -157,6 +188,43 @@ static struct iio_map axp22x_maps[] = {
+@@ -170,6 +197,43 @@ static struct iio_map axp22x_maps[] = {
   * The only exception is for the battery. batt_v will be in_voltage6_raw and
   * charge current in_current6_raw and discharge current will be in_current7_raw.
   */
@@ -109,7 +105,23 @@ index 53bf7d4899d2..7d2bf9529420 100644
  static const struct iio_chan_spec axp20x_adc_channels[] = {
  	AXP20X_ADC_CHANNEL(AXP20X_ACIN_V, "acin_v", IIO_VOLTAGE,
  			   AXP20X_ACIN_V_ADC_H),
-@@ -277,6 +345,44 @@ static int axp813_adc_raw(struct iio_dev *indio_dev,
+@@ -250,6 +314,15 @@ static int axp20x_adc_raw(struct iio_dev *indio_dev,
+ 	int ret, size;
+ 
+ 	switch (info->data->axp20x_id) {
++	case AXP192_ID:
++		/* Battery current ADCs on the AXP192 are 13 bits. */
++		if (chan->type == IIO_CURRENT &&
++		    (chan->channel == AXP20X_BATT_CHRG_I || chan->channel == AXP20X_BATT_DISCHRG_I))
++			size = 13;
++		else
++			size = 12;
++		break;
++
+ 	case AXP202_ID:
+ 	case AXP209_ID:
+ 		/*
+@@ -276,6 +349,44 @@ static int axp20x_adc_raw(struct iio_dev *indio_dev,
  	return IIO_VAL_INT;
  }
  
@@ -154,7 +166,7 @@ index 53bf7d4899d2..7d2bf9529420 100644
  static int axp20x_adc_scale_voltage(int channel, int *val, int *val2)
  {
  	switch (channel) {
-@@ -380,6 +486,29 @@ static int axp20x_adc_scale_current(int channel, int *val, int *val2)
+@@ -379,6 +490,29 @@ static int axp20x_adc_scale_current(int channel, int *val, int *val2)
  	}
  }
  
@@ -184,7 +196,7 @@ index 53bf7d4899d2..7d2bf9529420 100644
  static int axp20x_adc_scale(struct iio_chan_spec const *chan, int *val,
  			    int *val2)
  {
-@@ -439,6 +568,42 @@ static int axp813_adc_scale(struct iio_chan_spec const *chan, int *val,
+@@ -438,6 +572,42 @@ static int axp813_adc_scale(struct iio_chan_spec const *chan, int *val,
  	}
  }
  
@@ -192,42 +204,42 @@ index 53bf7d4899d2..7d2bf9529420 100644
 +				     int *val)
 +{
 +	struct axp20x_adc_iio *info = iio_priv(indio_dev);
++	unsigned int regval;
 +	int ret;
 +
-+	ret = regmap_read(info->regmap, AXP192_GPIO30_IN_RANGE, val);
++	ret = regmap_read(info->regmap, AXP192_GPIO30_IN_RANGE, &regval);
 +	if (ret < 0)
 +		return ret;
 +
 +	switch (channel) {
 +	case AXP192_GPIO0_V:
-+		*val &= AXP192_GPIO30_IN_RANGE_GPIO0;
++		regval &= AXP192_GPIO30_IN_RANGE_GPIO0;
 +		break;
 +
 +	case AXP192_GPIO1_V:
-+		*val &= AXP192_GPIO30_IN_RANGE_GPIO1;
++		regval &= AXP192_GPIO30_IN_RANGE_GPIO1;
 +		break;
 +
 +	case AXP192_GPIO2_V:
-+		*val &= AXP192_GPIO30_IN_RANGE_GPIO2;
++		regval &= AXP192_GPIO30_IN_RANGE_GPIO2;
 +		break;
 +
 +	case AXP192_GPIO3_V:
-+		*val &= AXP192_GPIO30_IN_RANGE_GPIO3;
++		regval &= AXP192_GPIO30_IN_RANGE_GPIO3;
 +		break;
 +
 +	default:
 +		return -EINVAL;
 +	}
 +
-+	*val = *val ? 700000 : 0;
-+
++	*val = regval ? 700000 : 0;
 +	return IIO_VAL_INT;
 +}
 +
  static int axp20x_adc_offset_voltage(struct iio_dev *indio_dev, int channel,
  				     int *val)
  {
-@@ -467,6 +632,22 @@ static int axp20x_adc_offset_voltage(struct iio_dev *indio_dev, int channel,
+@@ -466,6 +636,22 @@ static int axp20x_adc_offset_voltage(struct iio_dev *indio_dev, int channel,
  	return IIO_VAL_INT;
  }
  
@@ -250,7 +262,7 @@ index 53bf7d4899d2..7d2bf9529420 100644
  static int axp20x_adc_offset(struct iio_dev *indio_dev,
  			     struct iio_chan_spec const *chan, int *val)
  {
-@@ -483,6 +664,25 @@ static int axp20x_adc_offset(struct iio_dev *indio_dev,
+@@ -482,6 +668,25 @@ static int axp20x_adc_offset(struct iio_dev *indio_dev,
  	}
  }
  
@@ -276,7 +288,7 @@ index 53bf7d4899d2..7d2bf9529420 100644
  static int axp20x_read_raw(struct iio_dev *indio_dev,
  			   struct iio_chan_spec const *chan, int *val,
  			   int *val2, long mask)
-@@ -543,6 +743,54 @@ static int axp813_read_raw(struct iio_dev *indio_dev,
+@@ -542,6 +747,53 @@ static int axp813_read_raw(struct iio_dev *indio_dev,
  	}
  }
  
@@ -285,7 +297,7 @@ index 53bf7d4899d2..7d2bf9529420 100644
 +			    long mask)
 +{
 +	struct axp20x_adc_iio *info = iio_priv(indio_dev);
-+	unsigned int reg, regval;
++	unsigned int regmask, regval;
 +
 +	/*
 +	 * The AXP192 PMIC allows the user to choose between 0V and 0.7V offsets
@@ -297,69 +309,54 @@ index 53bf7d4899d2..7d2bf9529420 100644
 +	if (val != 0 && val != 700000)
 +		return -EINVAL;
 +
-+	val = val ? 1 : 0;
++	regval = val ? 1 : 0;
 +
 +	switch (chan->channel) {
 +	case AXP192_GPIO0_V:
-+		reg = AXP192_GPIO30_IN_RANGE_GPIO0;
-+		regval = AXP192_GPIO30_IN_RANGE_GPIO0_VAL(val);
++		regmask = AXP192_GPIO30_IN_RANGE_GPIO0;
++		regval = FIELD_PREP(AXP192_GPIO30_IN_RANGE_GPIO0, regval);
 +		break;
 +
 +	case AXP192_GPIO1_V:
-+		reg = AXP192_GPIO30_IN_RANGE_GPIO1;
-+		regval = AXP192_GPIO30_IN_RANGE_GPIO1_VAL(val);
++		regmask = AXP192_GPIO30_IN_RANGE_GPIO1;
++		regval = FIELD_PREP(AXP192_GPIO30_IN_RANGE_GPIO1, regval);
 +		break;
 +
 +	case AXP192_GPIO2_V:
-+		reg = AXP192_GPIO30_IN_RANGE_GPIO2;
-+		regval = AXP192_GPIO30_IN_RANGE_GPIO2_VAL(val);
++		regmask = AXP192_GPIO30_IN_RANGE_GPIO2;
++		regval = FIELD_PREP(AXP192_GPIO30_IN_RANGE_GPIO2, regval);
 +		break;
 +
 +	case AXP192_GPIO3_V:
-+		reg = AXP192_GPIO30_IN_RANGE_GPIO3;
-+		regval = AXP192_GPIO30_IN_RANGE_GPIO3_VAL(val);
++		regmask = AXP192_GPIO30_IN_RANGE_GPIO3;
++		regval = FIELD_PREP(AXP192_GPIO30_IN_RANGE_GPIO3, regval);
 +		break;
 +
 +	default:
 +		return -EINVAL;
 +	}
 +
-+	return regmap_update_bits(info->regmap, AXP192_GPIO30_IN_RANGE, reg,
-+				  regval);
++	return regmap_update_bits(info->regmap, AXP192_GPIO30_IN_RANGE, regmask, regval);
 +}
 +
  static int axp20x_write_raw(struct iio_dev *indio_dev,
  			    struct iio_chan_spec const *chan, int val, int val2,
  			    long mask)
-@@ -581,6 +829,18 @@ static int axp20x_write_raw(struct iio_dev *indio_dev,
- 				  regval);
+@@ -579,6 +831,11 @@ static int axp20x_write_raw(struct iio_dev *indio_dev,
+ 	return regmap_update_bits(info->regmap, AXP20X_GPIO10_IN_RANGE, regmask, regval);
  }
  
-+static int axp192_read_label(struct iio_dev *iio_dev,
-+			     const struct iio_chan_spec *chan, char *label)
-+{
-+	return snprintf(label, PAGE_SIZE, "%s\n", chan->datasheet_name);
-+}
-+
 +static const struct iio_info axp192_adc_iio_info = {
 +	.read_raw = axp192_read_raw,
 +	.write_raw = axp192_write_raw,
-+	.read_label = axp192_read_label,
 +};
 +
  static const struct iio_info axp20x_adc_iio_info = {
  	.read_raw = axp20x_read_raw,
  	.write_raw = axp20x_write_raw,
-@@ -620,19 +880,29 @@ struct axp_data {
- 	int				num_channels;
- 	struct iio_chan_spec const	*channels;
- 	unsigned long			adc_en1_mask;
-+	unsigned long			adc_en2_mask;
- 	int				(*adc_rate)(struct axp20x_adc_iio *info,
- 						    int rate);
--	bool				adc_en2;
- 	struct iio_map			*maps;
- };
+@@ -613,13 +870,24 @@ static int axp813_adc_rate(struct axp20x_adc_iio *info, int rate)
+ 				 AXP813_ADC_RATE_HZ(rate));
+ }
  
 +static const struct axp_data axp192_data = {
 +	.iio_info = &axp192_adc_iio_info,
@@ -369,6 +366,7 @@ index 53bf7d4899d2..7d2bf9529420 100644
 +	.adc_en2_mask = AXP192_ADC_EN2_MASK,
 +	.adc_rate = axp20x_adc_rate,
 +	.maps = axp20x_maps,
++	.axp20x_id = AXP192_ID,
 +};
 +
  static const struct axp_data axp20x_data = {
@@ -380,22 +378,23 @@ index 53bf7d4899d2..7d2bf9529420 100644
  	.adc_rate = axp20x_adc_rate,
 -	.adc_en2 = true,
  	.maps = axp20x_maps,
+ 	.axp20x_id = AXP209_ID,
  };
- 
-@@ -642,7 +912,6 @@ static const struct axp_data axp22x_data = {
+@@ -630,7 +898,6 @@ static const struct axp_data axp22x_data = {
  	.channels = axp22x_adc_channels,
  	.adc_en1_mask = AXP22X_ADC_EN1_MASK,
  	.adc_rate = axp22x_adc_rate,
 -	.adc_en2 = false,
  	.maps = axp22x_maps,
+ 	.axp20x_id = AXP221_ID,
  };
- 
-@@ -652,11 +921,11 @@ static const struct axp_data axp813_data = {
+@@ -641,12 +908,12 @@ static const struct axp_data axp813_data = {
  	.channels = axp813_adc_channels,
  	.adc_en1_mask = AXP22X_ADC_EN1_MASK,
  	.adc_rate = axp813_adc_rate,
 -	.adc_en2 = false,
  	.maps = axp22x_maps,
+ 	.axp20x_id = AXP813_ID,
  };
  
  static const struct of_device_id axp20x_adc_of_match[] = {
@@ -403,7 +402,7 @@ index 53bf7d4899d2..7d2bf9529420 100644
  	{ .compatible = "x-powers,axp209-adc", .data = (void *)&axp20x_data, },
  	{ .compatible = "x-powers,axp221-adc", .data = (void *)&axp22x_data, },
  	{ .compatible = "x-powers,axp813-adc", .data = (void *)&axp813_data, },
-@@ -665,6 +934,7 @@ static const struct of_device_id axp20x_adc_of_match[] = {
+@@ -655,6 +922,7 @@ static const struct of_device_id axp20x_adc_of_match[] = {
  MODULE_DEVICE_TABLE(of, axp20x_adc_of_match);
  
  static const struct platform_device_id axp20x_adc_id_match[] = {
@@ -411,7 +410,7 @@ index 53bf7d4899d2..7d2bf9529420 100644
  	{ .name = "axp20x-adc", .driver_data = (kernel_ulong_t)&axp20x_data, },
  	{ .name = "axp22x-adc", .driver_data = (kernel_ulong_t)&axp22x_data, },
  	{ .name = "axp813-adc", .driver_data = (kernel_ulong_t)&axp813_data, },
-@@ -710,10 +980,11 @@ static int axp20x_probe(struct platform_device *pdev)
+@@ -700,10 +968,11 @@ static int axp20x_probe(struct platform_device *pdev)
  	/* Enable the ADCs on IP */
  	regmap_write(info->regmap, AXP20X_ADC_EN1, info->data->adc_en1_mask);
  
@@ -426,7 +425,7 @@ index 53bf7d4899d2..7d2bf9529420 100644
  
  	/* Configure ADCs rate */
  	info->data->adc_rate(info, 100);
-@@ -738,7 +1009,7 @@ static int axp20x_probe(struct platform_device *pdev)
+@@ -728,7 +997,7 @@ static int axp20x_probe(struct platform_device *pdev)
  fail_map:
  	regmap_write(info->regmap, AXP20X_ADC_EN1, 0);
  
@@ -435,7 +434,7 @@ index 53bf7d4899d2..7d2bf9529420 100644
  		regmap_write(info->regmap, AXP20X_ADC_EN2, 0);
  
  	return ret;
-@@ -754,7 +1025,7 @@ static int axp20x_remove(struct platform_device *pdev)
+@@ -744,7 +1013,7 @@ static int axp20x_remove(struct platform_device *pdev)
  
  	regmap_write(info->regmap, AXP20X_ADC_EN1, 0);
  

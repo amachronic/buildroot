@@ -1,0 +1,52 @@
+From 0de9008b741548d19a2271d8e7e1a2538cc7636e Mon Sep 17 00:00:00 2001
+From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+Date: Wed, 27 Apr 2022 18:19:48 +0100
+Subject: [PATCH 16/32] dt-bindings: iio: adc: axp209: Add AXP192 compatible
+
+The AXP192 is identical to the AXP20x, except for two additional
+GPIO ADC channels.
+
+Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
+---
+ .../bindings/iio/adc/x-powers,axp209-adc.yaml  | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/iio/adc/x-powers,axp209-adc.yaml b/Documentation/devicetree/bindings/iio/adc/x-powers,axp209-adc.yaml
+index d6d3d8590171..1a68e650ac7d 100644
+--- a/Documentation/devicetree/bindings/iio/adc/x-powers,axp209-adc.yaml
++++ b/Documentation/devicetree/bindings/iio/adc/x-powers,axp209-adc.yaml
+@@ -14,6 +14,23 @@ description: |
+   Device is a child of an axp209 multifunction device
+   ADC channels and their indexes per variant:
+ 
++  AXP192
++  ------
++   0 | acin_v
++   1 | acin_i
++   2 | vbus_v
++   3 | vbus_i
++   4 | pmic_temp
++   5 | gpio0_v
++   6 | gpio1_v
++   7 | gpio2_v
++   8 | gpio3_v
++   9 | ipsout_v
++  10 | batt_v
++  11 | batt_chrg_i
++  12 | batt_dischrg_i
++  13 | ts_v
++
+   AXP209
+   ------
+    0 | acin_v
+@@ -50,6 +67,7 @@ description: |
+ properties:
+   compatible:
+     oneOf:
++      - const: x-powers,axp192-adc
+       - const: x-powers,axp209-adc
+       - const: x-powers,axp221-adc
+       - const: x-powers,axp813-adc
+-- 
+2.35.1
+

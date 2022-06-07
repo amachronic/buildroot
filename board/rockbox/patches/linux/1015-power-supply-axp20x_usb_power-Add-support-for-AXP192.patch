@@ -1,16 +1,18 @@
-From 6029a4ca2253afe5b02cb5534b853b79b2b0d5cd Mon Sep 17 00:00:00 2001
+From f193894511658dfdec28996eb40c2c75f58b7b77 Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Fri, 15 Apr 2022 10:49:24 +0100
-Subject: [PATCH 14/19] power: supply: axp20x_usb_power: Add support for AXP192
+Subject: [PATCH 25/32] power: supply: axp20x_usb_power: Add support for AXP192
 
 The AXP192 is mostly the same as the AXP202 but has a different
 current limit.
+
+Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 ---
- drivers/power/supply/axp20x_usb_power.c | 75 +++++++++++++++++++++++--
- 1 file changed, 70 insertions(+), 5 deletions(-)
+ drivers/power/supply/axp20x_usb_power.c | 80 +++++++++++++++++++++----
+ 1 file changed, 69 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/power/supply/axp20x_usb_power.c b/drivers/power/supply/axp20x_usb_power.c
-index a1e6d1d44808..cd98e4af88dd 100644
+index a1d110f7ddce..54a85419a975 100644
 --- a/drivers/power/supply/axp20x_usb_power.c
 +++ b/drivers/power/supply/axp20x_usb_power.c
 @@ -48,6 +48,9 @@
@@ -61,42 +63,42 @@ index a1e6d1d44808..cd98e4af88dd 100644
  	case POWER_SUPPLY_PROP_CURRENT_MAX:
  		if (power->axp20x_id == AXP813_ID)
  			return axp813_get_current_max(power, &val->intval);
-+		else if(power->axp20x_id == AXP192_ID)
++		else if (power->axp20x_id == AXP192_ID)
 +			return axp192_get_current_max(power, &val->intval);
  		return axp20x_get_current_max(power, &val->intval);
  	case POWER_SUPPLY_PROP_CURRENT_NOW:
  		if (IS_ENABLED(CONFIG_AXP20X_ADC)) {
-@@ -256,15 +279,26 @@ static int axp20x_usb_power_get_property(struct power_supply *psy,
+@@ -256,16 +279,20 @@ static int axp20x_usb_power_get_property(struct power_supply *psy,
  
  		val->intval = POWER_SUPPLY_HEALTH_GOOD;
  
 -		if (power->axp20x_id == AXP202_ID) {
 -			ret = regmap_read(power->regmap,
 -					  AXP20X_USB_OTG_STATUS, &v);
-+		switch (power->axp20x_id) {
-+		case AXP192_ID:
-+			/* Same layout as the AXP202, but different address */
+-			if (ret)
+-				return ret;
++		if (power->axp20x_id == AXP192_ID)
 +			reg = AXP192_USB_OTG_STATUS;
-+			fallthrough;
-+
-+		case AXP202_ID:
-+			if (power->axp20x_id == AXP202_ID)
-+				reg = AXP20X_USB_OTG_STATUS;
-+
-+			ret = regmap_read(power->regmap, reg, &v);
- 			if (ret)
- 				return ret;
- 
- 			if (!(v & AXP20X_USB_STATUS_VBUS_VALID))
- 				val->intval =
- 					POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
-+
-+		default:
++		else if (power->axp20x_id == AXP202_ID)
++			reg = AXP20X_USB_OTG_STATUS;
++		else
++			/* Other chips do not have an OTG status register */
 +			break;
- 		}
+ 
+-			if (!(v & AXP20X_USB_STATUS_VBUS_VALID))
+-				val->intval =
+-					POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
+-		}
++		ret = regmap_read(power->regmap, reg, &v);
++		if (ret)
++			return ret;
++
++		if (!(v & AXP20X_USB_STATUS_VBUS_VALID))
++			val->intval = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
  		break;
  	case POWER_SUPPLY_PROP_PRESENT:
-@@ -316,6 +350,24 @@ static int axp20x_usb_power_set_voltage_min(struct axp20x_usb_power *power,
+ 		val->intval = !!(input & AXP20X_PWR_STATUS_VBUS_PRESENT);
+@@ -316,6 +343,24 @@ static int axp20x_usb_power_set_voltage_min(struct axp20x_usb_power *power,
  	return -EINVAL;
  }
  
@@ -121,7 +123,7 @@ index a1e6d1d44808..cd98e4af88dd 100644
  static int axp813_usb_power_set_current_max(struct axp20x_usb_power *power,
  					    int intval)
  {
-@@ -383,6 +435,9 @@ static int axp20x_usb_power_set_property(struct power_supply *psy,
+@@ -383,6 +428,9 @@ static int axp20x_usb_power_set_property(struct power_supply *psy,
  		if (power->axp20x_id == AXP813_ID)
  			return axp813_usb_power_set_current_max(power,
  								val->intval);
@@ -131,7 +133,7 @@ index a1e6d1d44808..cd98e4af88dd 100644
  		return axp20x_usb_power_set_current_max(power, val->intval);
  
  	default:
-@@ -468,6 +523,13 @@ struct axp_data {
+@@ -468,6 +516,13 @@ struct axp_data {
  	enum axp20x_variants		axp20x_id;
  };
  
@@ -145,7 +147,7 @@ index a1e6d1d44808..cd98e4af88dd 100644
  static const struct axp_data axp202_data = {
  	.power_desc	= &axp20x_usb_power_desc,
  	.irq_names	= axp20x_irq_names,
-@@ -600,7 +662,7 @@ static int axp20x_usb_power_probe(struct platform_device *pdev)
+@@ -600,7 +655,7 @@ static int axp20x_usb_power_probe(struct platform_device *pdev)
  	if (ret)
  		return ret;
  
@@ -154,7 +156,7 @@ index a1e6d1d44808..cd98e4af88dd 100644
  		/* Enable vbus valid checking */
  		ret = regmap_update_bits(power->regmap, AXP20X_VBUS_MON,
  					 AXP20X_VBUS_MON_VBUS_VALID,
-@@ -659,6 +721,9 @@ static int axp20x_usb_power_probe(struct platform_device *pdev)
+@@ -661,6 +716,9 @@ static int axp20x_usb_power_probe(struct platform_device *pdev)
  
  static const struct of_device_id axp20x_usb_power_match[] = {
  	{
