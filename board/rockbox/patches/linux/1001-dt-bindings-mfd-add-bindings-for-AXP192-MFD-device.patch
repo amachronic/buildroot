@@ -1,10 +1,12 @@
-From 95b1b1478f50db0cab0306f27edb8b6472b38ad0 Mon Sep 17 00:00:00 2001
+From 172df8dc3b161703ab54014ca869f9c85505a2bc Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Wed, 27 Apr 2022 18:14:44 +0100
-Subject: [PATCH 15/32] dt-bindings: mfd: add bindings for AXP192 MFD device
+Subject: [PATCH 01/16] dt-bindings: mfd: add bindings for AXP192 MFD device
 
 The AXP192 is another X-Powers PMIC similar to the existing ones.
 
+Acked-by: Rob Herring <robh@kernel.org>
+Acked-by: Chen-Yu Tsai <wens@csie.org>
 Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 ---
  Documentation/devicetree/bindings/mfd/x-powers,axp152.yaml | 1 +
@@ -23,5 +25,5 @@ index 3a53bae611bc..33c9b1b3cc04 100644
            - x-powers,axp209
            - x-powers,axp221
 -- 
-2.35.1
+2.38.0
 

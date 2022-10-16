@@ -1,31 +1,34 @@
-From 520350d25eaf94e5be64ce012f94ed4e875de9d0 Mon Sep 17 00:00:00 2001
+From 914fb60f7ec0db01689e64b267cdcaa2dffc1d70 Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Fri, 3 Jun 2022 23:28:32 +0100
-Subject: [PATCH 22/32] iio: adc: axp20x_adc: Minor code cleanups
+Subject: [PATCH 07/16] iio: adc: axp20x_adc: Minor code cleanups
 
 The code may be clearer if parameters are not re-purposed to hold
 temporary results like register values, so introduce local variables
-as necessary to avoid that. Also, use the common FIELD_PREP macro
-instead of a hand-rolled version.
+as necessary to avoid that. Regroup macros based on chip type, and
+use the FIELD_PREP() macro instead of a hand-rolled version.
 
 Suggested-by: Jonathan Cameron <jic23@kernel.org>
+Reviewed-by: Chen-Yu Tsai <wens@csie.org>
+Reviewed-by: Jonathan Cameron <Jonathan.Cameron@huawei.com>
+Reviewed-by: Andy Shevchenko <andy.shevchenko@gmail.com>
 Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 ---
  drivers/iio/adc/axp20x_adc.c | 61 +++++++++++++++++++-----------------
- 1 file changed, 33 insertions(+), 28 deletions(-)
+ 1 file changed, 32 insertions(+), 29 deletions(-)
 
 diff --git a/drivers/iio/adc/axp20x_adc.c b/drivers/iio/adc/axp20x_adc.c
-index 53bf7d4899d2..9d5b1de24908 100644
+index 53bf7d4899d2..ab25e6e1ff65 100644
 --- a/drivers/iio/adc/axp20x_adc.c
 +++ b/drivers/iio/adc/axp20x_adc.c
-@@ -15,6 +15,7 @@
- #include <linux/property.h>
- #include <linux/regmap.h>
- #include <linux/thermal.h>
-+#include <linux/bitfield.h>
+@@ -5,6 +5,7 @@
+  *	Quentin Schulz <quentin.schulz@free-electrons.com>
+  */
  
- #include <linux/iio/iio.h>
- #include <linux/iio/driver.h>
++#include <linux/bitfield.h>
+ #include <linux/completion.h>
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
 @@ -22,20 +23,20 @@
  #include <linux/mfd/axp20x.h>
  
@@ -125,12 +128,12 @@ index 53bf7d4899d2..9d5b1de24908 100644
  	switch (channel) {
  	case AXP20X_GPIO0_V:
 -		*val &= AXP20X_GPIO10_IN_RANGE_GPIO0;
-+		regval &= AXP20X_GPIO10_IN_RANGE_GPIO0;
++		regval = FIELD_GET(AXP20X_GPIO10_IN_RANGE_GPIO0, regval);
  		break;
  
  	case AXP20X_GPIO1_V:
 -		*val &= AXP20X_GPIO10_IN_RANGE_GPIO1;
-+		regval &= AXP20X_GPIO10_IN_RANGE_GPIO1;
++		regval = FIELD_GET(AXP20X_GPIO10_IN_RANGE_GPIO1, regval);
  		break;
  
  	default:
@@ -152,26 +155,25 @@ index 53bf7d4899d2..9d5b1de24908 100644
  
  	/*
  	 * The AXP20X PMIC allows the user to choose between 0V and 0.7V offsets
-@@ -560,25 +566,24 @@ static int axp20x_write_raw(struct iio_dev *indio_dev,
+@@ -560,25 +566,22 @@ static int axp20x_write_raw(struct iio_dev *indio_dev,
  	if (val != 0 && val != 700000)
  		return -EINVAL;
  
 -	val = val ? 1 : 0;
-+	regval = val ? 1 : 0;
- 
+-
  	switch (chan->channel) {
  	case AXP20X_GPIO0_V:
 -		reg = AXP20X_GPIO10_IN_RANGE_GPIO0;
 -		regval = AXP20X_GPIO10_IN_RANGE_GPIO0_VAL(val);
 +		regmask = AXP20X_GPIO10_IN_RANGE_GPIO0;
-+		regval = FIELD_PREP(AXP20X_GPIO10_IN_RANGE_GPIO0, regval);
++		regval = FIELD_PREP(AXP20X_GPIO10_IN_RANGE_GPIO0, !!val);
  		break;
  
  	case AXP20X_GPIO1_V:
 -		reg = AXP20X_GPIO10_IN_RANGE_GPIO1;
 -		regval = AXP20X_GPIO10_IN_RANGE_GPIO1_VAL(val);
 +		regmask = AXP20X_GPIO10_IN_RANGE_GPIO1;
-+		regval = FIELD_PREP(AXP20X_GPIO10_IN_RANGE_GPIO1, regval);
++		regval = FIELD_PREP(AXP20X_GPIO10_IN_RANGE_GPIO1, !!val);
  		break;
  
  	default:
@@ -185,5 +187,5 @@ index 53bf7d4899d2..9d5b1de24908 100644
  
  static const struct iio_info axp20x_adc_iio_info = {
 -- 
-2.35.1
+2.38.0
 

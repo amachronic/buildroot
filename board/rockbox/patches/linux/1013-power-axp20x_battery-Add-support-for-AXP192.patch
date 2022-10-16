@@ -1,22 +1,24 @@
-From c270c3b13a758463b55a101dca06a6a328d8d959 Mon Sep 17 00:00:00 2001
+From 5351cb2f3c7cf8ca62faf23d413b1df1ca9dc4ac Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Fri, 3 Jun 2022 18:20:39 +0100
-Subject: [PATCH 29/32] power: axp20x_battery: Add support for AXP192
+Subject: [PATCH 13/16] power: axp20x_battery: Add support for AXP192
 
 The AXP192 has a battery charger similar to other X-Powers PMICs,
 but unlike the other supported devices, it does not have a fuel
 gauge and can't report battery capacity directly.
 
+Acked-by: Sebastian Reichel <sebastian.reichel@collabora.com>
+Reviewed-by: Andy Shevchenko <andy.shevchenko@gmail.com>
 Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 ---
  drivers/power/supply/axp20x_battery.c | 49 +++++++++++++++++++++++++--
  1 file changed, 46 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/power/supply/axp20x_battery.c b/drivers/power/supply/axp20x_battery.c
-index e9547e2d7c48..3fa2faa6f0f8 100644
+index 574c1d001556..1e84d26ce8e3 100644
 --- a/drivers/power/supply/axp20x_battery.c
 +++ b/drivers/power/supply/axp20x_battery.c
-@@ -538,6 +538,19 @@ static int axp20x_battery_set_prop(struct power_supply *psy,
+@@ -544,6 +544,19 @@ static int axp20x_battery_set_prop(struct power_supply *psy,
  	}
  }
  
@@ -36,7 +38,7 @@ index e9547e2d7c48..3fa2faa6f0f8 100644
  static enum power_supply_property axp20x_battery_props[] = {
  	POWER_SUPPLY_PROP_PRESENT,
  	POWER_SUPPLY_PROP_ONLINE,
-@@ -562,6 +575,16 @@ static int axp20x_battery_prop_writeable(struct power_supply *psy,
+@@ -568,6 +581,16 @@ static int axp20x_battery_prop_writeable(struct power_supply *psy,
  	       psp == POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX;
  }
  
@@ -53,7 +55,7 @@ index e9547e2d7c48..3fa2faa6f0f8 100644
  static const struct power_supply_desc axp20x_batt_ps_desc = {
  	.name = "axp20x-battery",
  	.type = POWER_SUPPLY_TYPE_BATTERY,
-@@ -572,6 +595,19 @@ static const struct power_supply_desc axp20x_batt_ps_desc = {
+@@ -578,6 +601,19 @@ static const struct power_supply_desc axp20x_batt_ps_desc = {
  	.set_property = axp20x_battery_set_prop,
  };
  
@@ -73,7 +75,7 @@ index e9547e2d7c48..3fa2faa6f0f8 100644
  static const struct axp_data axp209_data = {
  	.ccc_scale = 100000,
  	.ccc_offset = 300000,
-@@ -600,6 +636,9 @@ static const struct axp_data axp813_data = {
+@@ -606,6 +642,9 @@ static const struct axp_data axp813_data = {
  
  static const struct of_device_id axp20x_battery_ps_id[] = {
  	{
@@ -83,7 +85,7 @@ index e9547e2d7c48..3fa2faa6f0f8 100644
  		.compatible = "x-powers,axp209-battery-power-supply",
  		.data = (void *)&axp209_data,
  	}, {
-@@ -617,6 +656,7 @@ static int axp20x_power_probe(struct platform_device *pdev)
+@@ -623,6 +662,7 @@ static int axp20x_power_probe(struct platform_device *pdev)
  	struct axp20x_batt_ps *axp20x_batt;
  	struct power_supply_config psy_cfg = {};
  	struct power_supply_battery_info *info;
@@ -91,7 +93,7 @@ index e9547e2d7c48..3fa2faa6f0f8 100644
  	struct device *dev = &pdev->dev;
  
  	if (!of_device_is_available(pdev->dev.of_node))
-@@ -660,9 +700,12 @@ static int axp20x_power_probe(struct platform_device *pdev)
+@@ -666,9 +706,12 @@ static int axp20x_power_probe(struct platform_device *pdev)
  
  	axp20x_batt->data = (struct axp_data *)of_device_get_match_data(dev);
  
@@ -108,5 +110,5 @@ index e9547e2d7c48..3fa2faa6f0f8 100644
  		dev_err(&pdev->dev, "failed to register power supply: %ld\n",
  			PTR_ERR(axp20x_batt->batt));
 -- 
-2.35.1
+2.38.0
 

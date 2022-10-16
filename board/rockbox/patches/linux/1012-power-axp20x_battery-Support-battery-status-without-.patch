@@ -1,31 +1,33 @@
-From e0da10382983e917c21cf81bb171a9adc09a166a Mon Sep 17 00:00:00 2001
+From 4536b86a5d2862a39045a8344c39b82528fe649a Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Fri, 3 Jun 2022 18:07:57 +0100
-Subject: [PATCH 28/32] power: axp20x_battery: Support battery status without
+Subject: [PATCH 12/16] power: axp20x_battery: Support battery status without
  fuel gauge
 
 Add a "has_fg" flag to indicate that the chip has a fuel gauge.
 Report battery full status on chips with no fuel gauge using the
 battery voltage.
 
+Acked-by: Sebastian Reichel <sebastian.reichel@collabora.com>
+Reviewed-by: Andy Shevchenko <andy.shevchenko@gmail.com>
 Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 ---
  drivers/power/supply/axp20x_battery.c | 34 ++++++++++++++++++++++++++-
  1 file changed, 33 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/power/supply/axp20x_battery.c b/drivers/power/supply/axp20x_battery.c
-index 87fb958f2224..e9547e2d7c48 100644
+index 401779d84d2b..574c1d001556 100644
 --- a/drivers/power/supply/axp20x_battery.c
 +++ b/drivers/power/supply/axp20x_battery.c
-@@ -62,6 +62,7 @@ struct axp_data {
- 	int	ccc_scale;
- 	int	ccc_offset;
+@@ -69,6 +69,7 @@ struct axp_data {
+ 	 * must have AXP20X_CHRG_CTRL1_TGT_CURR+1 elements.
+ 	 */
  	const int *ccc_table;
 +	bool	has_fg;
  	bool	has_fg_valid;
  	int	(*get_max_voltage)(struct axp20x_batt_ps *batt, int *val);
  	int	(*set_max_voltage)(struct axp20x_batt_ps *batt, int val);
-@@ -190,7 +191,7 @@ static int axp20x_battery_get_prop(struct power_supply *psy,
+@@ -197,7 +198,7 @@ static int axp20x_battery_get_prop(struct power_supply *psy,
  				   union power_supply_propval *val)
  {
  	struct axp20x_batt_ps *axp20x_batt = power_supply_get_drvdata(psy);
@@ -34,7 +36,7 @@ index 87fb958f2224..e9547e2d7c48 100644
  
  	switch (psp) {
  	case POWER_SUPPLY_PROP_PRESENT:
-@@ -224,6 +225,34 @@ static int axp20x_battery_get_prop(struct power_supply *psy,
+@@ -231,6 +232,34 @@ static int axp20x_battery_get_prop(struct power_supply *psy,
  			return 0;
  		}
  
@@ -69,7 +71,7 @@ index 87fb958f2224..e9547e2d7c48 100644
  		ret = regmap_read(axp20x_batt->regmap, AXP20X_FG_RES, &val1);
  		if (ret)
  			return ret;
-@@ -546,6 +575,7 @@ static const struct power_supply_desc axp20x_batt_ps_desc = {
+@@ -552,6 +581,7 @@ static const struct power_supply_desc axp20x_batt_ps_desc = {
  static const struct axp_data axp209_data = {
  	.ccc_scale = 100000,
  	.ccc_offset = 300000,
@@ -77,7 +79,7 @@ index 87fb958f2224..e9547e2d7c48 100644
  	.get_max_voltage = axp20x_battery_get_max_voltage,
  	.set_max_voltage = axp20x_battery_set_max_voltage,
  };
-@@ -553,6 +583,7 @@ static const struct axp_data axp209_data = {
+@@ -559,6 +589,7 @@ static const struct axp_data axp209_data = {
  static const struct axp_data axp221_data = {
  	.ccc_scale = 150000,
  	.ccc_offset = 300000,
@@ -85,7 +87,7 @@ index 87fb958f2224..e9547e2d7c48 100644
  	.has_fg_valid = true,
  	.get_max_voltage = axp22x_battery_get_max_voltage,
  	.set_max_voltage = axp22x_battery_set_max_voltage,
-@@ -561,6 +592,7 @@ static const struct axp_data axp221_data = {
+@@ -567,6 +598,7 @@ static const struct axp_data axp221_data = {
  static const struct axp_data axp813_data = {
  	.ccc_scale = 200000,
  	.ccc_offset = 200000,
@@ -94,5 +96,5 @@ index 87fb958f2224..e9547e2d7c48 100644
  	.get_max_voltage = axp813_battery_get_max_voltage,
  	.set_max_voltage = axp20x_battery_set_max_voltage,
 -- 
-2.35.1
+2.38.0
 

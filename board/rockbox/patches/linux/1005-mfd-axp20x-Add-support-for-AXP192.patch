@@ -1,17 +1,19 @@
-From a23e9b1e280f3f4accdd49ceaa894be9557dc86c Mon Sep 17 00:00:00 2001
+From 16482bdb9c759fd88906a3f28964303c928b9c32 Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Fri, 15 Apr 2022 10:43:07 +0100
-Subject: [PATCH 20/32] mfd: axp20x: Add support for AXP192
+Subject: [PATCH 05/16] mfd: axp20x: Add support for AXP192
 
 The AXP192 PMIC is similar to the AXP202/AXP209, but with different
 regulators, additional GPIOs, and a different IRQ register layout.
 
+Acked-for-MFD-by: Lee Jones <lee.jones@linaro.org>
+Reviewed-by: Andy Shevchenko <andy.shevchenko@gmail.com>
 Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 ---
  drivers/mfd/axp20x-i2c.c   |   2 +
- drivers/mfd/axp20x.c       | 153 +++++++++++++++++++++++++++++++++++++
- include/linux/mfd/axp20x.h |  84 ++++++++++++++++++++
- 3 files changed, 239 insertions(+)
+ drivers/mfd/axp20x.c       | 141 +++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/axp20x.h |  84 ++++++++++++++++++++++
+ 3 files changed, 227 insertions(+)
 
 diff --git a/drivers/mfd/axp20x-i2c.c b/drivers/mfd/axp20x-i2c.c
 index 00ab48018d8d..9ada58fad77f 100644
@@ -34,7 +36,7 @@ index 00ab48018d8d..9ada58fad77f 100644
  	{ "axp209", 0 },
  	{ "axp221", 0 },
 diff --git a/drivers/mfd/axp20x.c b/drivers/mfd/axp20x.c
-index 8161a5dc68e8..1011e668589a 100644
+index 88a212a8168c..7d2949209d77 100644
 --- a/drivers/mfd/axp20x.c
 +++ b/drivers/mfd/axp20x.c
 @@ -34,6 +34,7 @@
@@ -81,16 +83,10 @@ index 8161a5dc68e8..1011e668589a 100644
  /* AXP22x ranges are shared with the AXP809, as they cover the same range */
  static const struct regmap_range axp22x_writeable_ranges[] = {
  	regmap_reg_range(AXP20X_DATACACHE(0), AXP20X_IRQ5_STATE),
-@@ -173,6 +203,25 @@ static const struct resource axp152_pek_resources[] = {
+@@ -173,6 +203,19 @@ static const struct resource axp152_pek_resources[] = {
  	DEFINE_RES_IRQ_NAMED(AXP152_IRQ_PEK_FAL_EDGE, "PEK_DBF"),
  };
  
-+static const struct resource axp192_gpio_resources[] = {
-+	DEFINE_RES_IRQ_NAMED(AXP192_IRQ_GPIO0_INPUT, "GPIO0"),
-+	DEFINE_RES_IRQ_NAMED(AXP192_IRQ_GPIO1_INPUT, "GPIO1"),
-+	DEFINE_RES_IRQ_NAMED(AXP192_IRQ_GPIO2_INPUT, "GPIO2"),
-+};
-+
 +static const struct resource axp192_ac_power_supply_resources[] = {
 +	DEFINE_RES_IRQ_NAMED(AXP192_IRQ_ACIN_PLUGIN, "ACIN_PLUGIN"),
 +	DEFINE_RES_IRQ_NAMED(AXP192_IRQ_ACIN_REMOVAL, "ACIN_REMOVAL"),
@@ -107,7 +103,7 @@ index 8161a5dc68e8..1011e668589a 100644
  static const struct resource axp20x_ac_power_supply_resources[] = {
  	DEFINE_RES_IRQ_NAMED(AXP20X_IRQ_ACIN_PLUGIN, "ACIN_PLUGIN"),
  	DEFINE_RES_IRQ_NAMED(AXP20X_IRQ_ACIN_REMOVAL, "ACIN_REMOVAL"),
-@@ -245,6 +294,15 @@ static const struct regmap_config axp152_regmap_config = {
+@@ -245,6 +288,15 @@ static const struct regmap_config axp152_regmap_config = {
  	.cache_type	= REGCACHE_RBTREE,
  };
  
@@ -123,7 +119,7 @@ index 8161a5dc68e8..1011e668589a 100644
  static const struct regmap_config axp20x_regmap_config = {
  	.reg_bits	= 8,
  	.val_bits	= 8,
-@@ -304,6 +362,55 @@ static const struct regmap_irq axp152_regmap_irqs[] = {
+@@ -304,6 +356,42 @@ static const struct regmap_irq axp152_regmap_irqs[] = {
  	INIT_REGMAP_IRQ(AXP152, GPIO0_INPUT,		2, 0),
  };
  
@@ -163,32 +159,32 @@ index 8161a5dc68e8..1011e668589a 100644
 +	INIT_REGMAP_IRQ(AXP192, GPIO0_INPUT,		4, 0),
 +};
 +
-+static int axp192_get_irq_reg(unsigned int base_reg, int i)
-+{
-+	/* linear mapping for IRQ1 to IRQ4 */
-+	if (i < 4)
-+		return base_reg + i;
-+
-+	/* handle IRQ5 separately */
-+	if (base_reg == AXP192_IRQ1_EN)
-+		return AXP192_IRQ5_EN;
-+	else
-+		return AXP192_IRQ5_STATE;
-+}
-+
  static const struct regmap_irq axp20x_regmap_irqs[] = {
  	INIT_REGMAP_IRQ(AXP20X, ACIN_OVER_V,		0, 7),
  	INIT_REGMAP_IRQ(AXP20X, ACIN_PLUGIN,		0, 6),
-@@ -514,6 +621,19 @@ static const struct regmap_irq_chip axp152_regmap_irq_chip = {
+@@ -514,6 +602,32 @@ static const struct regmap_irq_chip axp152_regmap_irq_chip = {
  	.num_regs		= 3,
  };
  
++static unsigned int axp192_get_irq_reg(struct regmap_irq_chip_data *data,
++				       unsigned int base, int index)
++{
++	/* linear mapping for IRQ1 to IRQ4 */
++	if (index < 4)
++		return base + index;
++
++	/* handle IRQ5 separately */
++	if (base == AXP192_IRQ1_EN)
++		return AXP192_IRQ5_EN;
++
++	return AXP192_IRQ5_STATE;
++}
++
 +static const struct regmap_irq_chip axp192_regmap_irq_chip = {
 +	.name			= "axp192_irq_chip",
 +	.status_base		= AXP192_IRQ1_STATE,
 +	.ack_base		= AXP192_IRQ1_STATE,
-+	.mask_base		= AXP192_IRQ1_EN,
-+	.mask_invert		= true,
++	.unmask_base		= AXP192_IRQ1_EN,
 +	.init_ack_masked	= true,
 +	.irqs			= axp192_regmap_irqs,
 +	.num_irqs		= ARRAY_SIZE(axp192_regmap_irqs),
@@ -199,19 +195,12 @@ index 8161a5dc68e8..1011e668589a 100644
  static const struct regmap_irq_chip axp20x_regmap_irq_chip = {
  	.name			= "axp20x_irq_chip",
  	.status_base		= AXP20X_IRQ1_STATE,
-@@ -588,6 +708,33 @@ static const struct regmap_irq_chip axp809_regmap_irq_chip = {
+@@ -588,6 +702,27 @@ static const struct regmap_irq_chip axp809_regmap_irq_chip = {
  	.num_regs		= 5,
  };
  
 +static const struct mfd_cell axp192_cells[] = {
 +	{
-+		.name		= "axp192-gpio",
-+		.of_compatible	= "x-powers,axp192-gpio",
-+		.num_resources	= ARRAY_SIZE(axp192_gpio_resources),
-+		.resources	= axp192_gpio_resources,
-+	}, {
-+		.name		= "axp20x-regulator",
-+	}, {
 +		.name		= "axp192-adc",
 +		.of_compatible	= "x-powers,axp192-adc",
 +	}, {
@@ -227,13 +216,14 @@ index 8161a5dc68e8..1011e668589a 100644
 +		.of_compatible	= "x-powers,axp192-usb-power-supply",
 +		.num_resources	= ARRAY_SIZE(axp192_usb_power_supply_resources),
 +		.resources	= axp192_usb_power_supply_resources,
-+	}
++	},
++	{	.name		= "axp20x-regulator" },
 +};
 +
  static const struct mfd_cell axp20x_cells[] = {
  	{
  		.name		= "axp20x-gpio",
-@@ -865,6 +1012,12 @@ int axp20x_match_device(struct axp20x_dev *axp20x)
+@@ -874,6 +1009,12 @@ int axp20x_match_device(struct axp20x_dev *axp20x)
  		axp20x->regmap_cfg = &axp152_regmap_config;
  		axp20x->regmap_irq_chip = &axp152_regmap_irq_chip;
  		break;
@@ -247,7 +237,7 @@ index 8161a5dc68e8..1011e668589a 100644
  	case AXP209_ID:
  		axp20x->nr_cells = ARRAY_SIZE(axp20x_cells);
 diff --git a/include/linux/mfd/axp20x.h b/include/linux/mfd/axp20x.h
-index 9ab0e2fca7ea..18546e124919 100644
+index 9ab0e2fca7ea..c9a9ee8ec246 100644
 --- a/include/linux/mfd/axp20x.h
 +++ b/include/linux/mfd/axp20x.h
 @@ -12,6 +12,7 @@
@@ -348,7 +338,7 @@ index 9ab0e2fca7ea..18546e124919 100644
 +	AXP192_LDO2,
 +	AXP192_LDO3,
 +	AXP192_LDO_IO0,
-+	AXP192_REG_ID_MAX,
++	AXP192_REG_ID_MAX
 +};
 +
  enum {
@@ -398,5 +388,5 @@ index 9ab0e2fca7ea..18546e124919 100644
  	AXP20X_IRQ_ACIN_OVER_V = 1,
  	AXP20X_IRQ_ACIN_PLUGIN,
 -- 
-2.35.1
+2.38.0
 

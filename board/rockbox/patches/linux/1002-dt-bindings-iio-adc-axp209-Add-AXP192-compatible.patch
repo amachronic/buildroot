@@ -1,11 +1,13 @@
-From 0de9008b741548d19a2271d8e7e1a2538cc7636e Mon Sep 17 00:00:00 2001
+From f1ff8712768da8b59bec321d34555955e9bbf43e Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Wed, 27 Apr 2022 18:19:48 +0100
-Subject: [PATCH 16/32] dt-bindings: iio: adc: axp209: Add AXP192 compatible
+Subject: [PATCH 02/16] dt-bindings: iio: adc: axp209: Add AXP192 compatible
 
 The AXP192 is identical to the AXP20x, except for two additional
 GPIO ADC channels.
 
+Acked-by: Rob Herring <robh@kernel.org>
+Reviewed-by: Chen-Yu Tsai <wens@csie.org>
 Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 ---
  .../bindings/iio/adc/x-powers,axp209-adc.yaml  | 18 ++++++++++++++++++
@@ -48,5 +50,5 @@ index d6d3d8590171..1a68e650ac7d 100644
        - const: x-powers,axp221-adc
        - const: x-powers,axp813-adc
 -- 
-2.35.1
+2.38.0
 

@@ -1,31 +1,44 @@
-From 0a1fd975ce395ae138f6e38819eb44f3c2c0a267 Mon Sep 17 00:00:00 2001
+From 3cc04d6d620b29af6f0a7068c4faae52f1a70f47 Mon Sep 17 00:00:00 2001
 From: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 Date: Fri, 3 Jun 2022 16:13:22 +0100
-Subject: [PATCH 27/32] power: axp20x_battery: Add constant charge current
+Subject: [PATCH 11/16] power: axp20x_battery: Add constant charge current
  table
 
 Add a table-based lookup method for constant charge current,
 which is necessary when the setting cannot be represented as
 a linear range.
 
+This also replaces the hard-coded 300 mA default ccc setting
+if the DT-specified value is unsupported; the minimum value
+for the device is now set exactly instead of relying on the
+value being rounded down to a supported value.
+
+Reviewed-by: Andy Shevchenko <andy.shevchenko@gmail.com>
 Signed-off-by: Aidan MacDonald <aidanmacdonald.0x0@gmail.com>
 ---
- drivers/power/supply/axp20x_battery.c | 53 +++++++++++++++++++++------
- 1 file changed, 41 insertions(+), 12 deletions(-)
+ drivers/power/supply/axp20x_battery.c | 59 +++++++++++++++++++++------
+ 1 file changed, 47 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/power/supply/axp20x_battery.c b/drivers/power/supply/axp20x_battery.c
-index 9106077c0dbb..87fb958f2224 100644
+index 9106077c0dbb..401779d84d2b 100644
 --- a/drivers/power/supply/axp20x_battery.c
 +++ b/drivers/power/supply/axp20x_battery.c
-@@ -61,6 +61,7 @@ struct axp20x_batt_ps;
+@@ -61,6 +61,14 @@ struct axp20x_batt_ps;
  struct axp_data {
  	int	ccc_scale;
  	int	ccc_offset;
++	/*
++	 * Lookup table for constant charge current, if provided this is used
++	 * instead of ccc_scale/ccc_offset.
++	 *
++	 * The table is indexed by the field AXP20X_CHRG_CTRL1_TGT_CURR so it
++	 * must have AXP20X_CHRG_CTRL1_TGT_CURR+1 elements.
++	 */
 +	const int *ccc_table;
  	bool	has_fg_valid;
  	int	(*get_max_voltage)(struct axp20x_batt_ps *batt, int *val);
  	int	(*set_max_voltage)(struct axp20x_batt_ps *batt, int val);
-@@ -176,7 +177,10 @@ static int axp20x_get_constant_charge_current(struct axp20x_batt_ps *axp,
+@@ -176,7 +184,10 @@ static int axp20x_get_constant_charge_current(struct axp20x_batt_ps *axp,
  
  	*val &= AXP20X_CHRG_CTRL1_TGT_CURR;
  
@@ -37,7 +50,7 @@ index 9106077c0dbb..87fb958f2224 100644
  
  	return 0;
  }
-@@ -389,16 +393,36 @@ static int axp20x_battery_set_max_voltage(struct axp20x_batt_ps *axp20x_batt,
+@@ -389,16 +400,35 @@ static int axp20x_battery_set_max_voltage(struct axp20x_batt_ps *axp20x_batt,
  				  AXP20X_CHRG_CTRL1_TGT_VOLT, val);
  }
  
@@ -47,7 +60,7 @@ index 9106077c0dbb..87fb958f2224 100644
 +	int i;
 +
 +	if (axp_batt->data->ccc_table) {
-+		for (i = AXP20X_CHRG_CTRL1_TGT_CURR; i >= 0; --i) {
++		for (i = AXP20X_CHRG_CTRL1_TGT_CURR; i >= 0; i--) {
 +			if (axp_batt->data->ccc_table[i] <= charge_current)
 +				return i;
 +		}
@@ -56,7 +69,6 @@ index 9106077c0dbb..87fb958f2224 100644
 +	}
 +
 +	i = (charge_current - axp_batt->data->ccc_offset) / axp_batt->data->ccc_scale;
-+
 +	if (i > AXP20X_CHRG_CTRL1_TGT_CURR || i < 0)
 +		return -EINVAL;
 +
@@ -78,7 +90,7 @@ index 9106077c0dbb..87fb958f2224 100644
  		return -EINVAL;
  
  	return regmap_update_bits(axp_batt->regmap, AXP20X_CHRG_CTRL1,
-@@ -410,14 +434,14 @@ static int axp20x_set_max_constant_charge_current(struct axp20x_batt_ps *axp,
+@@ -410,14 +440,14 @@ static int axp20x_set_max_constant_charge_current(struct axp20x_batt_ps *axp,
  {
  	bool lower_max = false;
  
@@ -99,7 +111,7 @@ index 9106077c0dbb..87fb958f2224 100644
  
  	if (charge_current > axp->max_ccc)
  		dev_warn(axp->dev,
-@@ -629,7 +653,12 @@ static int axp20x_power_probe(struct platform_device *pdev)
+@@ -629,7 +659,12 @@ static int axp20x_power_probe(struct platform_device *pdev)
  								   ccc)) {
  			dev_err(&pdev->dev,
  				"couldn't set constant charge current from DT: fallback to minimum value\n");
@@ -114,5 +126,5 @@ index 9106077c0dbb..87fb958f2224 100644
  			axp20x_set_constant_charge_current(axp20x_batt, ccc);
  		}
 -- 
-2.35.1
+2.38.0
 
